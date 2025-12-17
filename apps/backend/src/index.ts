@@ -2,7 +2,7 @@ import Fastify from "fastify";
 
 import type { HealthResponse } from "@optiq/shared";
 import { env } from "./env";
-import { registerTrackRoutes } from "./routes/track";
+import { registerTrackRoutes } from "./api/routes/track";
 
 const app = Fastify({
   logger: true,

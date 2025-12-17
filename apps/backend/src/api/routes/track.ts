@@ -3,7 +3,7 @@ import crypto from "node:crypto";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
 
-import { pool } from "../db";
+import { pool } from "../../db/pool";
 
 const TrackSchema = z.object({
   k: z.string().min(1),
