@@ -7,7 +7,7 @@ import { useMemo, useState } from "react";
 export default function SignInPage() {
   const router = useRouter();
   const params = useSearchParams();
-  const callbackUrl = useMemo(() => params.get("callbackUrl") ?? "/app", [params]);
+  const callbackUrl = useMemo(() => params?.get("callbackUrl") ?? "/app", [params]);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

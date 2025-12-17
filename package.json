@@ -6,17 +6,20 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "npm run dev -w @optiq/frontend",
+    "dev": "npm run build -w @optiq/shared && concurrently \"npm run dev -w @optiq/backend\" \"npm run dev -w @optiq/frontend\"",
     "dev:frontend": "npm run dev -w @optiq/frontend",
-    "dev:backend": "npm run dev -w @optiq/backend",
-    "build": "npm -ws run build",
+    "dev:backend": "npm run build -w @optiq/shared && npm run dev -w @optiq/backend",
+    "build": "npm run build -w @optiq/shared && npm run prisma:generate -w @optiq/backend && npm run build -w @optiq/backend && npm run build -w @optiq/frontend",
+    "typecheck": "tsc --build",
     "lint": "npm -ws run lint",
+    "clean": "npm -ws run clean && rm -rf node_modules",
     "format": "prettier . --write"
   },
   "devDependencies": {
     "@eslint/js": "^9.20.0",
     "@typescript-eslint/eslint-plugin": "^8.41.0",
     "@typescript-eslint/parser": "^8.41.0",
+    "concurrently": "^9.1.2",
     "eslint": "^9.20.0",
     "eslint-config-prettier": "^10.1.0",
     "prettier": "^3.6.2",

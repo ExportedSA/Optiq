@@ -1,0 +1,3 @@
+(globalThis.TURBOPACK||(globalThis.TURBOPACK=[])).push(["chunks/b1735_Optiq_CascadeProjects_windsurf-project_apps_frontend_edge-wrapper_fc47bd93.js",12065,(e,t,r)=>{self._ENTRIES||={};let n=Promise.resolve().then(()=>e.i(85753));n.catch(()=>{}),self._ENTRIES.middleware_middleware=new Proxy(n,{get(e,t){if("then"===t)return(t,r)=>e.then(t,r);let r=(...r)=>e.then(e=>(0,e[t])(...r));return r.then=(r,n)=>e.then(e=>e[t]).then(r,n),r}})}]);
+
+//# sourceMappingURL=b1735_Optiq_CascadeProjects_windsurf-project_apps_frontend_edge-wrapper_fc47bd93.js.map

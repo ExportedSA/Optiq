@@ -1,0 +1,3 @@
+module.exports=[3030,(a,b,c)=>{let{createClientModuleProxy:d}=a.r(95792);a.n(d("[project]/OneDrive/Desktop/Optiq/CascadeProjects/windsurf-project/node_modules/next/dist/client/components/builtin/global-error.js <module evaluation>"))},96666,(a,b,c)=>{let{createClientModuleProxy:d}=a.r(95792);a.n(d("[project]/OneDrive/Desktop/Optiq/CascadeProjects/windsurf-project/node_modules/next/dist/client/components/builtin/global-error.js"))},83422,a=>{"use strict";a.i(3030);var b=a.i(96666);a.n(b)}];
+
+//# sourceMappingURL=c9d07_next_dist_client_components_builtin_global-error_6c6c4ca1.js.map

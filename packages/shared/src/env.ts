@@ -19,9 +19,26 @@ export class EnvValidationError extends Error {
 
 function formatZodError(err: z.ZodError) {
   const flat = err.flatten();
+  const messages: string[] = [];
+  
+  // Format field-specific errors
+  for (const [field, errors] of Object.entries(flat.fieldErrors)) {
+    if (Array.isArray(errors) && errors.length > 0) {
+      messages.push(`  • ${field}: ${errors.join(", ")}`);
+    }
+  }
+  
+  // Format form-level errors
+  if (flat.formErrors.length > 0) {
+    messages.push(`  • ${flat.formErrors.join(", ")}`);
+  }
+  
   return {
     formErrors: flat.formErrors,
     fieldErrors: flat.fieldErrors,
+    readableMessage: messages.length > 0 
+      ? `\n${messages.join("\n")}` 
+      : "Unknown validation error",
   };
 }
 
@@ -39,8 +56,27 @@ export function loadEnv<TSchema extends z.ZodTypeAny>(
     snapshot[k] = redacted.has(k) ? "[REDACTED]" : v;
   }
 
-  throw new EnvValidationError("Invalid environment configuration", {
-    errors: formatZodError(parsed.error),
+  const formatted = formatZodError(parsed.error);
+  const errorMessage = `
+╔════════════════════════════════════════════════════════════════════════════╗
+║ ENVIRONMENT CONFIGURATION ERROR                                            ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+Your application failed to start due to invalid or missing environment variables.
+
+ERRORS:${formatted.readableMessage}
+
+TROUBLESHOOTING:
+  1. Copy .env.example to .env if you haven't already
+  2. Fill in all required values in your .env file
+  3. Ensure all values match the expected format (URLs, numbers, etc.)
+  4. Check that sensitive values meet minimum length requirements
+
+For more details, see .env.example in the project root.
+`;
+
+  throw new EnvValidationError(errorMessage, {
+    errors: formatted,
     snapshot,
   });
 }

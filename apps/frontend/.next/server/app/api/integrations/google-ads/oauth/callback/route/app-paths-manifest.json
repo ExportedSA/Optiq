@@ -1,0 +1,3 @@
+{
+  "/api/integrations/google-ads/oauth/callback/route": "app/api/integrations/google-ads/oauth/callback/route.js"
+}

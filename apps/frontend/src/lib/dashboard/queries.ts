@@ -123,7 +123,7 @@ export async function getRecentActivity(params: {
   const jobs = await prisma.ingestionJob.findMany({
     where: {
       organizationId: params.organizationId,
-      status: { in: ["COMPLETED", "FAILED"] },
+      status: { in: ["SUCCEEDED", "FAILED"] },
     },
     orderBy: { updatedAt: "desc" },
     take: params.limit ?? 5,
@@ -138,7 +138,7 @@ export async function getRecentActivity(params: {
 
   return jobs.map((job: typeof jobs[number]) => ({
     id: job.id,
-    type: job.status === "COMPLETED" ? "success" : "error",
+    type: job.status === "SUCCEEDED" ? "success" : "error",
     description: `${job.platform} ${job.jobType.toLowerCase().replace("_", " ")} ${job.status.toLowerCase()}`,
     timestamp: job.updatedAt,
   }));

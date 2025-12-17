@@ -1,0 +1,3 @@
+{
+  "/api/ingestion/worker/route": "app/api/ingestion/worker/route.js"
+}
