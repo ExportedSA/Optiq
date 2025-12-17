@@ -12,6 +12,8 @@
     "build": "npm run build -w @optiq/shared && npm run prisma:generate -w @optiq/backend && npm run build -w @optiq/backend && npm run build -w @optiq/frontend",
     "typecheck": "tsc --build",
     "lint": "npm -ws run lint",
+    "test": "echo \"No tests yet - add tests with: npm install --save-dev vitest @vitest/ui\" && exit 0",
+    "test:ci": "npm run test",
     "clean": "npm -ws run clean && rm -rf node_modules",
     "format": "prettier . --write"
   },
