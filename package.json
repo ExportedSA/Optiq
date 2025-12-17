@@ -1,0 +1,26 @@
+{
+  "name": "optiq",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w @optiq/frontend",
+    "dev:frontend": "npm run dev -w @optiq/frontend",
+    "dev:backend": "npm run dev -w @optiq/backend",
+    "build": "npm -ws run build",
+    "lint": "npm -ws run lint",
+    "format": "prettier . --write"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.20.0",
+    "@typescript-eslint/eslint-plugin": "^8.41.0",
+    "@typescript-eslint/parser": "^8.41.0",
+    "eslint": "^9.20.0",
+    "eslint-config-prettier": "^10.1.0",
+    "prettier": "^3.6.2",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.41.0"
+  }
+}

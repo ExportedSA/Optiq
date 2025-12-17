@@ -1,0 +1,563 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum MembershipRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+model User {
+  id             String    @id @default(cuid())
+  email          String    @unique
+  passwordHash   String?
+  name           String?
+  image          String?
+  emailVerified  DateTime?
+  activeOrgId    String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  accounts       Account[]
+  sessions       Session[]
+  memberships    Membership[]
+
+  activeOrg      Organization? @relation("ActiveOrg", fields: [activeOrgId], references: [id], onDelete: SetNull)
+  notifications  InAppNotification[]
+
+  @@index([activeOrgId])
+}
+
+model Organization {
+  id          String        @id @default(cuid())
+  name        String
+  slug        String        @unique
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  members     Membership[]
+  activeUsers User[]        @relation("ActiveOrg")
+
+  adAccounts  AdAccount[]
+  campaigns   Campaign[]
+  ads         Ad[]
+  dailyAdMetrics       DailyAdMetric[]
+  dailyCampaignMetrics DailyCampaignMetric[]
+  dailyAccountMetrics  DailyAdAccountMetric[]
+
+  googleAdsCredentials GoogleAdsCredential[]
+  metaAdsCredentials   MetaAdsCredential[]
+  tikTokAdsCredentials TikTokAdsCredential[]
+
+  trackingSites TrackingSite[]
+  notifications  InAppNotification[]
+  ingestionJobs  IngestionJob[]
+  settings       OrganizationSettings?
+}
+
+model Membership {
+  id             String           @id @default(cuid())
+  userId         String
+  organizationId String
+  role           MembershipRole
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+  @@index([organizationId])
+}
+
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?
+  access_token       String?
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+enum PlatformCode {
+  META
+  GOOGLE_ADS
+  TIKTOK
+  LINKEDIN
+  X
+}
+
+enum EntityStatus {
+  ACTIVE
+  PAUSED
+  ARCHIVED
+  DELETED
+}
+
+enum IngestionJobStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+enum IngestionJobType {
+  DAILY_SYNC
+}
+
+enum TrackingEventType {
+  PAGE_VIEW
+  CONVERSION
+}
+
+enum AttributionModel {
+  FIRST_TOUCH
+  LAST_TOUCH
+  LINEAR
+  TIME_DECAY
+  POSITION_BASED
+}
+
+model Platform {
+  id        String       @id @default(cuid())
+  code      PlatformCode @unique
+  name      String
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  adAccounts AdAccount[]
+  campaigns  Campaign[]
+  ads        Ad[]
+
+  dailyAdMetrics       DailyAdMetric[]
+  dailyCampaignMetrics DailyCampaignMetric[]
+  dailyAccountMetrics  DailyAdAccountMetric[]
+}
+
+model AdAccount {
+  id             String       @id @default(cuid())
+  organizationId String
+  platformId     String
+  externalId     String
+  name           String
+  currency       String
+  timezone       String
+  status         EntityStatus @default(ACTIVE)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  platform     Platform     @relation(fields: [platformId], references: [id], onDelete: Restrict)
+
+  campaigns Campaign[]
+  ads       Ad[]
+
+  dailyAccountMetrics  DailyAdAccountMetric[]
+  dailyCampaignMetrics DailyCampaignMetric[]
+  dailyAdMetrics       DailyAdMetric[]
+
+  @@unique([organizationId, platformId, externalId])
+  @@index([organizationId, platformId])
+  @@index([platformId])
+}
+
+model Campaign {
+  id             String       @id @default(cuid())
+  organizationId String
+  platformId     String
+  adAccountId    String
+  externalId     String
+  name           String
+  status         EntityStatus @default(ACTIVE)
+  objective      String?
+  startDate      DateTime?    @db.Date
+  endDate        DateTime?    @db.Date
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  platform     Platform     @relation(fields: [platformId], references: [id], onDelete: Restrict)
+  adAccount    AdAccount    @relation(fields: [adAccountId], references: [id], onDelete: Cascade)
+
+  ads Ad[]
+
+  dailyCampaignMetrics DailyCampaignMetric[]
+  dailyAdMetrics       DailyAdMetric[]
+
+  @@unique([organizationId, platformId, externalId])
+  @@index([organizationId, adAccountId])
+  @@index([organizationId, platformId])
+  @@index([adAccountId])
+}
+
+model Ad {
+  id             String       @id @default(cuid())
+  organizationId String
+  platformId     String
+  adAccountId    String
+  campaignId     String
+  externalId     String
+  name           String
+  status         EntityStatus @default(ACTIVE)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  platform     Platform     @relation(fields: [platformId], references: [id], onDelete: Restrict)
+  adAccount    AdAccount    @relation(fields: [adAccountId], references: [id], onDelete: Cascade)
+  campaign     Campaign     @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  dailyAdMetrics DailyAdMetric[]
+
+  @@unique([organizationId, platformId, externalId])
+  @@index([organizationId, campaignId])
+  @@index([organizationId, adAccountId])
+  @@index([campaignId])
+}
+
+model DailyAdAccountMetric {
+  id             String   @id @default(cuid())
+  organizationId String
+  platformId     String
+  adAccountId    String
+  date           DateTime @db.Date
+
+  impressions    BigInt   @default(0)
+  clicks         BigInt   @default(0)
+  spendMicros    BigInt   @default(0)
+  conversions    BigInt   @default(0)
+  revenueMicros  BigInt   @default(0)
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  platform     Platform     @relation(fields: [platformId], references: [id], onDelete: Restrict)
+  adAccount    AdAccount    @relation(fields: [adAccountId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, adAccountId, date])
+  @@index([organizationId, date])
+  @@index([organizationId, platformId, date])
+  @@index([adAccountId, date])
+}
+
+model DailyCampaignMetric {
+  id             String   @id @default(cuid())
+  organizationId String
+  platformId     String
+  adAccountId    String
+  campaignId     String
+  date           DateTime @db.Date
+
+  impressions    BigInt   @default(0)
+  clicks         BigInt   @default(0)
+  spendMicros    BigInt   @default(0)
+  conversions    BigInt   @default(0)
+  revenueMicros  BigInt   @default(0)
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  platform     Platform     @relation(fields: [platformId], references: [id], onDelete: Restrict)
+  adAccount    AdAccount    @relation(fields: [adAccountId], references: [id], onDelete: Cascade)
+  campaign     Campaign     @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, campaignId, date])
+  @@index([organizationId, date])
+  @@index([organizationId, platformId, date])
+  @@index([campaignId, date])
+  @@index([adAccountId, date])
+}
+
+model DailyAdMetric {
+  id             String   @id @default(cuid())
+  organizationId String
+  platformId     String
+  adAccountId    String
+  campaignId     String
+  adId           String
+  date           DateTime @db.Date
+
+  impressions    BigInt   @default(0)
+  clicks         BigInt   @default(0)
+  spendMicros    BigInt   @default(0)
+  conversions    BigInt   @default(0)
+  revenueMicros  BigInt   @default(0)
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  platform     Platform     @relation(fields: [platformId], references: [id], onDelete: Restrict)
+  adAccount    AdAccount    @relation(fields: [adAccountId], references: [id], onDelete: Cascade)
+  campaign     Campaign     @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  ad           Ad          @relation(fields: [adId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, adId, date])
+  @@index([organizationId, date])
+  @@index([organizationId, platformId, date])
+  @@index([campaignId, date])
+  @@index([adAccountId, date])
+  @@index([adId, date])
+}
+
+model GoogleAdsCredential {
+  id                 String   @id @default(cuid())
+  organizationId      String
+  customerId          String
+  refreshTokenEnc     String
+  accessTokenEnc      String?
+  accessTokenExpiresAt DateTime?
+  scope              String
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, customerId])
+  @@index([organizationId])
+}
+
+model MetaAdsCredential {
+  id                  String   @id @default(cuid())
+  organizationId       String
+  adAccountId          String
+  userId               String?
+  accessTokenEnc       String
+  accessTokenExpiresAt DateTime?
+  scope                String
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, adAccountId])
+  @@index([organizationId])
+}
+
+model TikTokAdsCredential {
+  id                  String   @id @default(cuid())
+  organizationId       String
+  advertiserId         String
+  accessTokenEnc       String
+  refreshTokenEnc      String
+  accessTokenExpiresAt DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                String
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, advertiserId])
+  @@index([organizationId])
+}
+
+model IngestionJob {
+  id             String            @id @default(cuid())
+  organizationId String
+  platform       PlatformCode
+  jobType        IngestionJobType
+  status         IngestionJobStatus @default(QUEUED)
+  idempotencyKey String            @unique
+
+  payload        Json
+
+  runAt          DateTime          @default(now())
+  attempts       Int               @default(0)
+  maxAttempts    Int               @default(8)
+  lockedAt       DateTime?
+  lockedBy       String?
+
+  lastError      String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([status, runAt])
+  @@index([organizationId, platform, jobType])
+}
+
+model TrackingSite {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  domain         String
+  publicKey      String   @unique
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  events       TrackingEvent[]
+  touchPoints  TouchPoint[]
+  attributionLinks AttributionLink[]
+
+  @@unique([organizationId, domain])
+  @@index([organizationId])
+}
+
+model TrackingEvent {
+  id         String            @id @default(cuid())
+  siteId     String
+  eventId    String
+  type       TrackingEventType
+  name       String?
+  occurredAt DateTime          @default(now())
+
+  url        String
+  path       String
+  referrer   String?
+  title      String?
+
+  utmSource  String?
+  utmMedium  String?
+  utmCampaign String?
+  utmTerm    String?
+  utmContent String?
+
+  anonId     String
+  sessionId  String
+
+  userAgent  String?
+  ipHash     String?
+
+  properties Json?
+
+  site TrackingSite @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  attributionLinks AttributionLink[]
+
+  @@unique([siteId, eventId])
+  @@index([siteId, occurredAt])
+  @@index([siteId, type, occurredAt])
+  @@index([siteId, utmSource, occurredAt])
+}
+
+model TouchPoint {
+  id             String   @id @default(cuid())
+  siteId         String
+  anonId         String
+  sessionId      String
+  occurredAt     DateTime @default(now())
+
+  utmSource      String?
+  utmMedium      String?
+  utmCampaign    String?
+  utmTerm        String?
+  utmContent     String?
+
+  gclid          String?
+  fbclid         String?
+  ttclid         String?
+  msclkid        String?
+  clickId        String?
+
+  referrer       String?
+  landingUrl     String?
+
+  platformCode   String?
+  campaignId     String?
+  adAccountId    String?
+  adId           String?
+
+  createdAt      DateTime @default(now())
+
+  site           TrackingSite @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  attributionLinks AttributionLink[]
+
+  @@index([siteId, anonId, occurredAt])
+  @@index([siteId, gclid])
+  @@index([siteId, fbclid])
+  @@index([siteId, utmSource, utmCampaign])
+}
+
+model AttributionLink {
+  id              String           @id @default(cuid())
+  siteId          String
+  conversionId    String
+  touchPointId    String
+  model           AttributionModel
+  weight          Float            @default(1.0)
+  position        Int
+  touchPointCount Int
+  createdAt       DateTime         @default(now())
+
+  site       TrackingSite  @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  conversion TrackingEvent @relation(fields: [conversionId], references: [id], onDelete: Cascade)
+  touchPoint TouchPoint    @relation(fields: [touchPointId], references: [id], onDelete: Cascade)
+
+  @@unique([conversionId, touchPointId, model])
+  @@index([siteId, model, createdAt])
+  @@index([touchPointId])
+  @@index([conversionId])
+}
+
+model InAppNotification {
+  id             String   @id
+  organizationId String
+  userId         String
+  title          String
+  message        String
+  priority       String   @default("normal")
+  status         String   @default("pending")
+  actionUrl      String?
+  metadata       Json?
+  createdAt      DateTime @default(now())
+  readAt         DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@index([organizationId, createdAt])
+  @@index([userId, organizationId, status])
+}
+
+model OrganizationSettings {
+  id             String   @id @default(cuid())
+  organizationId String   @unique
+  alertSettings  Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
