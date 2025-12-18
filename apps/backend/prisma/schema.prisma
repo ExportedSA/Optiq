@@ -155,6 +155,9 @@ model User {
   @@index([email])
 }
 
+// Add back relations after WasteScore is defined
+// This is a workaround for Prisma's forward reference limitation
+
 model Account {
   id                String  @id @default(cuid())
   userId            String
@@ -387,6 +390,7 @@ model Ad {
   campaign     Campaign     @relation(fields: [campaignId], references: [id], onDelete: Cascade)
 
   dailyAdMetrics DailyAdMetric[]
+
 
   @@unique([organizationId, platformId, externalId])
   @@index([organizationId, campaignId])

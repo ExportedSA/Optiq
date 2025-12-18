@@ -401,7 +401,7 @@ export async function runJourneyBuilderJob(
 
     console.log("Journey builder job completed:");
     console.log(`  Processed: ${result.processed}`);
-    console.log(`  Created/Rebuilt: ${result.created || result.rebuilt}`);
+    console.log(`  Created/Rebuilt: ${"created" in result ? result.created : result.rebuilt}`);
     console.log(`  Skipped: ${result.skipped}`);
 
     const stats = await getJourneyStats();
