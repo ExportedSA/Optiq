@@ -1,0 +1,45 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "installCommand": "npm ci",
+  "regions": ["iad1", "sfo1", "cdg1"],
+  "crons": [
+    {
+      "path": "/api/cron/usage-aggregation",
+      "schedule": "0 1 * * *"
+    },
+    {
+      "path": "/api/cron/daily-sync",
+      "schedule": "0 */4 * * *"
+    },
+    {
+      "path": "/api/cron/alerts-engine",
+      "schedule": "0 4 * * *"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "X-XSS-Protection", "value": "1; mode=block" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+      ]
+    },
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "SAMEORIGIN" }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/ingest/:path*",
+      "destination": "/api/tracking/ingest"
+    }
+  ]
+}

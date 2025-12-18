@@ -79,6 +79,14 @@ export class IntegrationRegistry implements IntegrationFactory {
   }
 }
 
+export function registerIntegration(
+  platform: PlatformCode,
+  integration: IntegrationConstructor,
+): void {
+  const registry = IntegrationRegistry.getInstance();
+  registry.register(platform, integration);
+}
+
 /**
  * Convenience function to get integration instance
  */

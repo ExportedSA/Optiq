@@ -131,27 +131,33 @@ export interface SyncResult {
   }>;
 }
 
+export interface IntegrationCore {
+  readonly platform: PlatformCode;
+  readonly name: string;
+
+  connect(params: ConnectionParams): Promise<string>;
+
+  refreshToken(organizationId: string, accountId: string): Promise<OAuthToken>;
+
+  syncCampaigns(
+    organizationId: string,
+    accountId: string,
+    options?: SyncOptions,
+  ): Promise<SyncResult>;
+
+  syncCosts(
+    organizationId: string,
+    accountId: string,
+    options: SyncOptions,
+  ): Promise<SyncResult>;
+}
+
 /**
  * Integration interface
  * 
  * All platform integrations must implement this interface
  */
-export interface Integration {
-  /**
-   * Platform identifier
-   */
-  readonly platform: PlatformCode;
-
-  /**
-   * Platform display name
-   */
-  readonly name: string;
-
-  /**
-   * Initialize OAuth connection flow
-   * Returns authorization URL for user to visit
-   */
-  connect(params: ConnectionParams): Promise<string>;
+export interface Integration extends IntegrationCore {
 
   /**
    * Complete OAuth connection with authorization code

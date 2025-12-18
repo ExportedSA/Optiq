@@ -7,6 +7,10 @@
 
 import { runJourneyBuilderJob } from "./journey-builder";
 import { createLogger } from "@optiq/shared";
+import { runMetaAdsCostSyncJob } from "./meta-ads-cost-sync";
+import { runTikTokAdsCostSyncJob } from "./tiktok-ads-cost-sync";
+import { runAlertsEngineJob } from "./alerts-engine";
+import { runUsageAggregation as runUsageAggregationJob } from "./usage-aggregation";
 
 const logger = createLogger({ name: "job-scheduler" });
 
@@ -98,6 +102,30 @@ const jobs: ScheduledJob[] = [
     schedule: process.env.JOURNEY_BUILDER_SCHEDULE || "0 * * * *", // Every hour by default
     handler: runJourneyBuilderJob,
     enabled: process.env.JOURNEY_BUILDER_ENABLED !== "false",
+  },
+  {
+    name: "meta-ads-cost-sync",
+    schedule: process.env.META_ADS_SYNC_SCHEDULE || "0 2 * * *", // daily 2am by default
+    handler: () => runMetaAdsCostSyncJob({ backfill: false }),
+    enabled: process.env.META_ADS_SYNC_ENABLED === "true",
+  },
+  {
+    name: "tiktok-ads-cost-sync",
+    schedule: process.env.TIKTOK_ADS_SYNC_SCHEDULE || "0 3 * * *", // daily 3am by default
+    handler: () => runTikTokAdsCostSyncJob({ backfill: false }),
+    enabled: process.env.TIKTOK_ADS_SYNC_ENABLED === "true",
+  },
+  {
+    name: "alerts-engine",
+    schedule: process.env.ALERTS_ENGINE_SCHEDULE || "0 4 * * *", // daily 4am by default
+    handler: () => runAlertsEngineJob(),
+    enabled: process.env.ALERTS_ENGINE_ENABLED === "true",
+  },
+  {
+    name: "usage-aggregation",
+    schedule: process.env.USAGE_AGGREGATION_SCHEDULE || "0 1 * * *", // daily 1am by default
+    handler: () => runUsageAggregationJob(),
+    enabled: process.env.USAGE_AGGREGATION_ENABLED !== "false",
   },
 ];
 

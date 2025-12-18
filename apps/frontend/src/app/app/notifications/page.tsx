@@ -1,0 +1,11 @@
+import type { Metadata } from "next";
+
+import { NotificationsClient } from "./client";
+
+export const metadata: Metadata = {
+  title: "Notifications | Optiq",
+};
+
+export default function NotificationsPage() {
+  return <NotificationsClient />;
+}

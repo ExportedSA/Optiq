@@ -92,12 +92,17 @@ export class MetaApiClient {
       if (response.status === 429) {
         const retryAfter = parseInt(response.headers.get("retry-after") || "60");
         console.log(`Rate limited by Meta. Retrying after ${retryAfter}s...`);
-        await this.sleep(retryAfter * 1000);
-        return this.request<T>(endpoint, params, attempt);
+        if (attempt >= META_ADS_CONFIG.retry.maxAttempts) {
+          throw new Error(`Max retry attempts reached. Status: ${response.status}`);
+        }
+
+        const delay = Math.max(retryAfter * 1000, this.calculateBackoff(attempt));
+        await this.sleep(delay);
+        return this.request<T>(endpoint, params, attempt + 1);
       }
 
       // Handle retryable errors
-      if (META_ADS_CONFIG.retry.retryableStatusCodes.includes(response.status)) {
+      if (META_ADS_CONFIG.retry.retryableStatusCodes.includes(response.status as any)) {
         if (attempt >= META_ADS_CONFIG.retry.maxAttempts) {
           throw new Error(`Max retry attempts reached. Status: ${response.status}`);
         }
@@ -113,7 +118,7 @@ export class MetaApiClient {
         throw new Error(`API request failed: ${response.status} ${error}`);
       }
 
-      return response.json();
+      return (await response.json()) as T;
     } catch (error) {
       // Retry on network errors
       if (error instanceof TypeError && attempt < META_ADS_CONFIG.retry.maxAttempts) {

@@ -60,6 +60,7 @@ export type {
   CostMetrics,
   SyncOptions,
   SyncResult,
+  IntegrationCore,
   Integration,
   IntegrationConfig,
   IntegrationFactory,
@@ -71,9 +72,12 @@ export { BaseIntegration } from "./base-integration";
 // Example integration
 export { GoogleAdsIntegration } from "./google-ads-integration";
 
+export { ExampleStubIntegration } from "./example-stub-integration";
+
 // Factory
 export {
   IntegrationRegistry,
+  registerIntegration,
   getIntegration,
   isPlatformSupported,
   getSupportedPlatforms,

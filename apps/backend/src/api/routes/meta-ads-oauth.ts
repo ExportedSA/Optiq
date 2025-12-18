@@ -9,6 +9,7 @@ import { z } from "zod";
 import { PrismaClient } from "@prisma/client";
 import crypto from "crypto";
 import { META_ADS_CONFIG } from "../../config/meta-ads";
+import { encryptString } from "../../utils/crypto";
 
 const prisma = new PrismaClient();
 
@@ -125,7 +126,7 @@ export async function registerMetaAdsOAuthRoutes(app: FastifyInstance) {
           return reply.redirect("/dashboard/integrations?error=token_exchange_failed");
         }
 
-        const tokenData = await tokenResponse.json();
+        const tokenData = (await tokenResponse.json()) as any;
 
         // Exchange short-lived token for long-lived token (60 days)
         const longLivedUrl = new URL(`${META_ADS_CONFIG.baseUrl}/${META_ADS_CONFIG.apiVersion}/oauth/access_token`);
@@ -141,7 +142,7 @@ export async function registerMetaAdsOAuthRoutes(app: FastifyInstance) {
           return reply.redirect("/dashboard/integrations?error=long_lived_token_failed");
         }
 
-        const longLivedData = await longLivedResponse.json();
+        const longLivedData = (await longLivedResponse.json()) as any;
 
         // Fetch user's ad accounts
         const accountsUrl = new URL(`${META_ADS_CONFIG.baseUrl}/${META_ADS_CONFIG.apiVersion}/me/adaccounts`);
@@ -155,20 +156,50 @@ export async function registerMetaAdsOAuthRoutes(app: FastifyInstance) {
           return reply.redirect("/dashboard/integrations?error=account_fetch_failed");
         }
 
-        const accountsData = await accountsResponse.json();
-        const accountIds = accountsData.data?.map((acc: any) => acc.id) || [];
+        const accountsData = (await accountsResponse.json()) as any;
+        const accounts: Array<{ id: string; name?: string; currency?: string; timezone_name?: string }> = accountsData.data || [];
 
         // Store credential (expires in 60 days)
         const expiresAt = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000);
 
-        await prisma.metaAdsCredential.create({
-          data: {
-            organizationId: validatedState.organizationId,
-            accessToken: longLivedData.access_token,
-            expiresAt,
-            accountIds: accountIds.join(","),
-          },
-        });
+        for (const acc of accounts) {
+          await prisma.integrationConnection.upsert({
+            where: {
+              organizationId_platformCode_externalAccountId: {
+                organizationId: validatedState.organizationId,
+                platformCode: "META",
+                externalAccountId: acc.id,
+              },
+            },
+            create: {
+              organizationId: validatedState.organizationId,
+              platformCode: "META",
+              externalAccountId: acc.id,
+              externalAccountName: acc.name ?? null,
+              currency: acc.currency ?? null,
+              timezone: acc.timezone_name ?? null,
+              status: "CONNECTED",
+              accessTokenEnc: encryptString(longLivedData.access_token),
+              refreshTokenEnc: null,
+              accessTokenExpiresAt: expiresAt,
+              refreshTokenExpiresAt: null,
+              scope: META_ADS_CONFIG.scopes.join(","),
+              tokenType: "Bearer",
+              metadata: null,
+            },
+            update: {
+              externalAccountName: acc.name ?? null,
+              currency: acc.currency ?? null,
+              timezone: acc.timezone_name ?? null,
+              status: "CONNECTED",
+              accessTokenEnc: encryptString(longLivedData.access_token),
+              accessTokenExpiresAt: expiresAt,
+              scope: META_ADS_CONFIG.scopes.join(","),
+              tokenType: "Bearer",
+            },
+            select: { id: true },
+          });
+        }
 
         return reply.redirect("/dashboard/integrations?connected=meta_ads");
       } catch (error) {
@@ -191,51 +222,19 @@ export async function registerMetaAdsOAuthRoutes(app: FastifyInstance) {
       try {
         const { organizationId } = req.body;
 
-        const credential = await prisma.metaAdsCredential.findFirst({
-          where: { organizationId },
-          orderBy: { createdAt: "desc" },
+        const connection = await prisma.integrationConnection.findFirst({
+          where: { organizationId, platformCode: "META", status: "CONNECTED" },
+          orderBy: { updatedAt: "desc" },
         });
 
-        if (!credential) {
-          return reply.status(404).send({
-            success: false,
-            error: "No credential found",
-          });
+        if (!connection?.accessTokenEnc) {
+          return reply.status(404).send({ success: false, error: "No connection found" });
         }
 
-        // Exchange current token for new long-lived token
-        const refreshUrl = new URL(`${META_ADS_CONFIG.baseUrl}/${META_ADS_CONFIG.apiVersion}/oauth/access_token`);
-        refreshUrl.searchParams.set("grant_type", "fb_exchange_token");
-        refreshUrl.searchParams.set("client_id", process.env.META_APP_ID || "");
-        refreshUrl.searchParams.set("client_secret", process.env.META_APP_SECRET || "");
-        refreshUrl.searchParams.set("fb_exchange_token", credential.accessToken);
-
-        const refreshResponse = await fetch(refreshUrl.toString());
-
-        if (!refreshResponse.ok) {
-          const errorText = await refreshResponse.text();
-          req.log.error({ error: errorText }, "Token refresh failed");
-          return reply.status(500).send({
-            success: false,
-            error: "Token refresh failed",
-          });
-        }
-
-        const tokenData = await refreshResponse.json();
-        const expiresAt = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000);
-
-        // Update credential
-        await prisma.metaAdsCredential.update({
-          where: { id: credential.id },
-          data: {
-            accessToken: tokenData.access_token,
-            expiresAt,
-          },
-        });
-
-        return reply.status(200).send({
-          success: true,
-          expiresAt,
+        // NOTE: We cannot refresh without decrypting. In v1, refresh should be done via reconnect.
+        return reply.status(501).send({
+          success: false,
+          error: "NOT_IMPLEMENTED",
         });
       } catch (error) {
         req.log.error({ err: error }, "Token refresh failed");
@@ -260,16 +259,10 @@ export async function registerMetaAdsOAuthRoutes(app: FastifyInstance) {
       try {
         const { organizationId } = req.body;
 
-        const credential = await prisma.metaAdsCredential.findFirst({
-          where: { organizationId },
+        await prisma.integrationConnection.updateMany({
+          where: { organizationId, platformCode: "META" },
+          data: { status: "DISCONNECTED" },
         });
-
-        if (credential) {
-          // Delete credential (Meta doesn't have a revoke endpoint for long-lived tokens)
-          await prisma.metaAdsCredential.delete({
-            where: { id: credential.id },
-          });
-        }
 
         return reply.status(200).send({
           success: true,

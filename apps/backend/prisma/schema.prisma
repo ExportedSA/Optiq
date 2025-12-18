@@ -116,8 +116,8 @@ enum AlertEventStatus {
 enum SubscriptionPlan {
   FREE
   STARTER
-  PROFESSIONAL
-  ENTERPRISE
+  GROWTH
+  SCALE
 }
 
 enum SubscriptionStatus {
@@ -126,6 +126,20 @@ enum SubscriptionStatus {
   PAST_DUE
   CANCELED
   PAUSED
+}
+
+enum IntegrationConnectionStatus {
+  CONNECTED
+  DISCONNECTED
+  ERROR
+  EXPIRED
+}
+
+enum CostGrain {
+  CAMPAIGN
+  ADSET
+  AD
+  ADGROUP
 }
 
 // ============================================================================
@@ -282,18 +296,101 @@ model Subscription {
   trialStart         DateTime?
   trialEnd           DateTime?
 
-  // Usage limits
-  monthlyEventLimit Int?
-  monthlySpendLimit BigInt? // in micros
+  // Plan limits (can override defaults)
+  maxWorkspaces       Int?
+  maxConnectors       Int?
+  monthlyEventLimit   Int?
+  dataRetentionDays   Int?
+  attributionModels   String[]  // e.g. ["FIRST_TOUCH", "LAST_TOUCH", "LINEAR"]
+  alertsEnabled       Boolean   @default(false)
+  ssoEnabled          Boolean   @default(false)
+  prioritySupport     Boolean   @default(false)
+
+  // Overage pricing (cents per unit)
+  overageEventsPer10k   Int?  // cents per 10k events over limit
+  overageConnectorPrice Int?  // cents per extra connector per month
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization  Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  usageRecords  UsageRecord[]
 
   @@index([stripeCustomerId])
   @@index([stripeSubscriptionId])
   @@index([status])
+}
+
+model UsageRecord {
+  id             String   @id @default(cuid())
+  subscriptionId String
+  organizationId String
+
+  periodStart DateTime
+  periodEnd   DateTime
+
+  // Usage metrics
+  trackedEvents      Int      @default(0)
+  connectedAccounts  Int      @default(0)
+  workspacesUsed     Int      @default(0)
+
+  // Overage calculations (computed at period end)
+  eventsOverage      Int      @default(0)
+  connectorsOverage  Int      @default(0)
+  overageAmountCents Int      @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@unique([subscriptionId, periodStart])
+  @@index([organizationId, periodStart])
+  @@index([subscriptionId, periodEnd])
+}
+
+model DailyUsageCounter {
+  id             String   @id @default(cuid())
+  organizationId String
+  date           DateTime @db.Date
+
+  // Event counters
+  pageViews      Int      @default(0)
+  conversions    Int      @default(0)
+  customEvents   Int      @default(0)
+  totalEvents    Int      @default(0)
+
+  // API request counters
+  apiRequests    Int      @default(0)
+  webhookCalls   Int      @default(0)
+
+  // Resource counters (snapshot at end of day)
+  activeConnectors Int    @default(0)
+  activeCampaigns  Int    @default(0)
+
+  // Throttle tracking
+  throttledRequests Int   @default(0)
+  softLimitHit      Boolean @default(false)
+  hardLimitHit      Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, date])
+  @@index([organizationId, date])
+  @@index([date])
+}
+
+model MeteringAuditLog {
+  id             String   @id @default(cuid())
+  organizationId String
+  eventType      String   // "event_ingested", "limit_exceeded", "throttle_applied", "overage_calculated"
+  eventCount     Int      @default(1)
+  metadata       Json?
+  timestamp      DateTime @default(now())
+
+  @@index([organizationId, timestamp])
+  @@index([eventType, timestamp])
 }
 
 // ============================================================================
@@ -488,6 +585,45 @@ model DailyAdMetric {
   @@index([adId, date])
 }
 
+model CostFact {
+  id             String   @id @default(cuid())
+  organizationId String
+  platformId     String
+  adAccountId    String
+  date           DateTime @db.Date
+
+  grain          CostGrain
+  entityExternalId   String
+  entityName         String?
+
+  campaignExternalId String?
+  campaignName       String?
+  adsetExternalId    String?
+  adsetName          String?
+  adExternalId       String?
+  adName             String?
+
+  publisherPlatform String?
+
+  impressions   BigInt @default(0)
+  clicks        BigInt @default(0)
+  spendMicros   BigInt @default(0)
+  conversions   BigInt @default(0)
+  revenueMicros BigInt @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  platform     Platform     @relation(fields: [platformId], references: [id], onDelete: Restrict)
+  adAccount    AdAccount    @relation(fields: [adAccountId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, platformId, adAccountId, date, grain, entityExternalId, publisherPlatform])
+  @@index([organizationId, date])
+  @@index([organizationId, platformId, date])
+  @@index([adAccountId, date])
+}
+
 // ============================================================================
 // INTEGRATION TOKENS (CREDENTIALS)
 // ============================================================================
@@ -542,6 +678,36 @@ model TikTokAdsCredential {
 
   @@unique([organizationId, advertiserId])
   @@index([organizationId])
+}
+
+model IntegrationConnection {
+  id                String                     @id @default(cuid())
+  organizationId    String
+  platformCode      PlatformCode
+  externalAccountId String
+
+  externalAccountName String?
+  currency            String?
+  timezone            String?
+  status              IntegrationConnectionStatus @default(CONNECTED)
+
+  accessTokenEnc        String?
+  refreshTokenEnc       String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                String?
+  tokenType            String?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, platformCode, externalAccountId])
+  @@index([organizationId])
+  @@index([organizationId, platformCode])
 }
 
 // ============================================================================
