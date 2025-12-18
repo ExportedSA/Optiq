@@ -133,41 +133,41 @@ enum SubscriptionStatus {
 // ============================================================================
 
 model User {
-  id             String    @id @default(cuid())
-  email          String    @unique
-  passwordHash   String?
-  name           String?
-  image          String?
-  emailVerified  DateTime?
-  activeOrgId    String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String?
+  name          String?
+  image         String?
+  emailVerified DateTime?
+  activeOrgId   String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
-  accounts       Account[]
-  sessions       Session[]
-  memberships    Membership[]
+  accounts    Account[]
+  sessions    Session[]
+  memberships Membership[]
 
-  activeOrg      Organization? @relation("ActiveOrg", fields: [activeOrgId], references: [id], onDelete: SetNull)
-  notifications  InAppNotification[]
-  alertEvents    AlertEvent[]
+  activeOrg     Organization?       @relation("ActiveOrg", fields: [activeOrgId], references: [id], onDelete: SetNull)
+  notifications InAppNotification[]
+  alertEvents   AlertEvent[]
 
   @@index([activeOrgId])
   @@index([email])
 }
 
 model Account {
-  id                 String  @id @default(cuid())
-  userId             String
-  type               String
-  provider           String
-  providerAccountId  String
-  refresh_token      String?
-  access_token       String?
-  expires_at         Int?
-  token_type         String?
-  scope              String?
-  id_token           String?
-  session_state      String?
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -199,19 +199,19 @@ model VerificationToken {
 // ============================================================================
 
 model Organization {
-  id          String        @id @default(cuid())
-  name        String
-  slug        String        @unique
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   members     Membership[]
-  activeUsers User[]        @relation("ActiveOrg")
+  activeUsers User[]       @relation("ActiveOrg")
 
   // Ad Platform Data
-  adAccounts  AdAccount[]
-  campaigns   Campaign[]
-  ads         Ad[]
+  adAccounts           AdAccount[]
+  campaigns            Campaign[]
+  ads                  Ad[]
   dailyAdMetrics       DailyAdMetric[]
   dailyCampaignMetrics DailyCampaignMetric[]
   dailyAccountMetrics  DailyAdAccountMetric[]
@@ -226,28 +226,30 @@ model Organization {
   journeys      Journey[]
 
   // Alerts
-  alertRules    AlertRule[]
-  alertEvents   AlertEvent[]
+  alertRules  AlertRule[]
+  alertEvents AlertEvent[]
 
   // System
   notifications  InAppNotification[]
   ingestionJobs  IngestionJob[]
   settings       OrganizationSettings?
   subscription   Subscription?
+  identities     Identity[]
+  identityMerges IdentityMerge[]
 
   @@index([slug])
 }
 
 model Membership {
-  id             String           @id @default(cuid())
+  id             String         @id @default(cuid())
   userId         String
   organizationId String
   role           MembershipRole
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 
-  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@unique([userId, organizationId])
   @@index([organizationId])
@@ -259,30 +261,30 @@ model Membership {
 // ============================================================================
 
 model Subscription {
-  id                    String             @id @default(cuid())
-  organizationId        String             @unique
-  plan                  SubscriptionPlan
-  status                SubscriptionStatus
-  
+  id             String             @id @default(cuid())
+  organizationId String             @unique
+  plan           SubscriptionPlan
+  status         SubscriptionStatus
+
   // Stripe integration
-  stripeCustomerId      String?            @unique
-  stripeSubscriptionId  String?            @unique
-  stripePriceId         String?
-  
+  stripeCustomerId     String? @unique
+  stripeSubscriptionId String? @unique
+  stripePriceId        String?
+
   // Billing
-  currentPeriodStart    DateTime
-  currentPeriodEnd      DateTime
-  cancelAtPeriodEnd     Boolean            @default(false)
-  canceledAt            DateTime?
-  trialStart            DateTime?
-  trialEnd              DateTime?
-  
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  cancelAtPeriodEnd  Boolean   @default(false)
+  canceledAt         DateTime?
+  trialStart         DateTime?
+  trialEnd           DateTime?
+
   // Usage limits
-  monthlyEventLimit     Int?
-  monthlySpendLimit     BigInt?            // in micros
-  
-  createdAt             DateTime           @default(now())
-  updatedAt             DateTime           @updatedAt
+  monthlyEventLimit Int?
+  monthlySpendLimit BigInt? // in micros
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
@@ -403,14 +405,14 @@ model DailyAdAccountMetric {
   adAccountId    String
   date           DateTime @db.Date
 
-  impressions    BigInt   @default(0)
-  clicks         BigInt   @default(0)
-  spendMicros    BigInt   @default(0)
-  conversions    BigInt   @default(0)
-  revenueMicros  BigInt   @default(0)
+  impressions   BigInt @default(0)
+  clicks        BigInt @default(0)
+  spendMicros   BigInt @default(0)
+  conversions   BigInt @default(0)
+  revenueMicros BigInt @default(0)
 
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   platform     Platform     @relation(fields: [platformId], references: [id], onDelete: Restrict)
@@ -430,14 +432,14 @@ model DailyCampaignMetric {
   campaignId     String
   date           DateTime @db.Date
 
-  impressions    BigInt   @default(0)
-  clicks         BigInt   @default(0)
-  spendMicros    BigInt   @default(0)
-  conversions    BigInt   @default(0)
-  revenueMicros  BigInt   @default(0)
+  impressions   BigInt @default(0)
+  clicks        BigInt @default(0)
+  spendMicros   BigInt @default(0)
+  conversions   BigInt @default(0)
+  revenueMicros BigInt @default(0)
 
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   platform     Platform     @relation(fields: [platformId], references: [id], onDelete: Restrict)
@@ -460,20 +462,20 @@ model DailyAdMetric {
   adId           String
   date           DateTime @db.Date
 
-  impressions    BigInt   @default(0)
-  clicks         BigInt   @default(0)
-  spendMicros    BigInt   @default(0)
-  conversions    BigInt   @default(0)
-  revenueMicros  BigInt   @default(0)
+  impressions   BigInt @default(0)
+  clicks        BigInt @default(0)
+  spendMicros   BigInt @default(0)
+  conversions   BigInt @default(0)
+  revenueMicros BigInt @default(0)
 
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   platform     Platform     @relation(fields: [platformId], references: [id], onDelete: Restrict)
   adAccount    AdAccount    @relation(fields: [adAccountId], references: [id], onDelete: Cascade)
   campaign     Campaign     @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  ad           Ad          @relation(fields: [adId], references: [id], onDelete: Cascade)
+  ad           Ad           @relation(fields: [adId], references: [id], onDelete: Cascade)
 
   @@unique([organizationId, adId, date])
   @@index([organizationId, date])
@@ -488,15 +490,15 @@ model DailyAdMetric {
 // ============================================================================
 
 model GoogleAdsCredential {
-  id                 String   @id @default(cuid())
-  organizationId      String
-  customerId          String
-  refreshTokenEnc     String
-  accessTokenEnc      String?
+  id                   String    @id @default(cuid())
+  organizationId       String
+  customerId           String
+  refreshTokenEnc      String
+  accessTokenEnc       String?
   accessTokenExpiresAt DateTime?
-  scope              String
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  scope                String
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
@@ -505,15 +507,15 @@ model GoogleAdsCredential {
 }
 
 model MetaAdsCredential {
-  id                  String   @id @default(cuid())
+  id                   String    @id @default(cuid())
   organizationId       String
   adAccountId          String
   userId               String?
   accessTokenEnc       String
   accessTokenExpiresAt DateTime?
   scope                String
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
@@ -522,16 +524,16 @@ model MetaAdsCredential {
 }
 
 model TikTokAdsCredential {
-  id                  String   @id @default(cuid())
-  organizationId       String
-  advertiserId         String
-  accessTokenEnc       String
-  refreshTokenEnc      String
-  accessTokenExpiresAt DateTime?
+  id                    String    @id @default(cuid())
+  organizationId        String
+  advertiserId          String
+  accessTokenEnc        String
+  refreshTokenEnc       String
+  accessTokenExpiresAt  DateTime?
   refreshTokenExpiresAt DateTime?
-  scope                String
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  scope                 String
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
@@ -552,10 +554,11 @@ model TrackingSite {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  events       TrackingEvent[]
-  touchPoints  TouchPoint[]
+  organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  events           TrackingEvent[]
+  touchPoints      TouchPoint[]
   attributionLinks AttributionLink[]
+  identities       Identity[]
 
   @@unique([organizationId, domain])
   @@index([organizationId])
@@ -569,22 +572,22 @@ model TrackingEvent {
   name       String?
   occurredAt DateTime          @default(now())
 
-  url        String
-  path       String
-  referrer   String?
-  title      String?
+  url      String
+  path     String
+  referrer String?
+  title    String?
 
-  utmSource  String?
-  utmMedium  String?
+  utmSource   String?
+  utmMedium   String?
   utmCampaign String?
-  utmTerm    String?
-  utmContent String?
+  utmTerm     String?
+  utmContent  String?
 
-  anonId     String
-  sessionId  String
+  anonId    String
+  sessionId String
 
-  userAgent  String?
-  ipHash     String?
+  userAgent String?
+  ipHash    String?
 
   // Conversion value (for CONVERSION type events)
   valueMicros BigInt?
@@ -605,35 +608,35 @@ model TrackingEvent {
 }
 
 model TouchPoint {
-  id             String   @id @default(cuid())
-  siteId         String
-  anonId         String
-  sessionId      String
-  occurredAt     DateTime @default(now())
+  id         String   @id @default(cuid())
+  siteId     String
+  anonId     String
+  sessionId  String
+  occurredAt DateTime @default(now())
 
-  utmSource      String?
-  utmMedium      String?
-  utmCampaign    String?
-  utmTerm        String?
-  utmContent     String?
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+  utmTerm     String?
+  utmContent  String?
 
-  gclid          String?
-  fbclid         String?
-  ttclid         String?
-  msclkid        String?
-  clickId        String?
+  gclid   String?
+  fbclid  String?
+  ttclid  String?
+  msclkid String?
+  clickId String?
 
-  referrer       String?
-  landingUrl     String?
+  referrer   String?
+  landingUrl String?
 
-  platformCode   String?
-  campaignId     String?
-  adAccountId    String?
-  adId           String?
+  platformCode String?
+  campaignId   String?
+  adAccountId  String?
+  adId         String?
 
-  createdAt      DateTime @default(now())
+  createdAt DateTime @default(now())
 
-  site           TrackingSite @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  site             TrackingSite      @relation(fields: [siteId], references: [id], onDelete: Cascade)
   attributionLinks AttributionLink[]
 
   @@index([siteId, anonId, occurredAt])
@@ -675,15 +678,15 @@ model Journey {
   anonId         String
   sessionId      String
   status         JourneyStatus @default(IN_PROGRESS)
-  
-  startedAt      DateTime      @default(now())
+
+  startedAt      DateTime  @default(now())
   convertedAt    DateTime?
-  lastActivityAt DateTime      @default(now())
-  
+  lastActivityAt DateTime  @default(now())
+
   // Conversion details
-  conversionValue BigInt?      // in micros
+  conversionValue BigInt? // in micros
   conversionName  String?
-  
+
   // Journey metadata
   firstUtmSource   String?
   firstUtmMedium   String?
@@ -691,14 +694,14 @@ model Journey {
   lastUtmSource    String?
   lastUtmMedium    String?
   lastUtmCampaign  String?
-  
-  touchPointCount  Int          @default(0)
-  eventCount       Int          @default(0)
-  
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  touchPointCount Int @default(0)
+  eventCount      Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   events       JourneyEvent[]
 
   @@index([organizationId, status, lastActivityAt])
@@ -708,11 +711,11 @@ model Journey {
 }
 
 model JourneyEvent {
-  id             String   @id @default(cuid())
-  journeyId      String
+  id              String   @id @default(cuid())
+  journeyId       String
   trackingEventId String
-  sequenceNumber Int
-  occurredAt     DateTime @default(now())
+  sequenceNumber  Int
+  occurredAt      DateTime @default(now())
 
   journey       Journey       @relation(fields: [journeyId], references: [id], onDelete: Cascade)
   trackingEvent TrackingEvent @relation(fields: [trackingEventId], references: [id], onDelete: Cascade)
@@ -734,21 +737,21 @@ model AlertRule {
   type           AlertRuleType
   severity       AlertSeverity
   status         AlertRuleStatus @default(ACTIVE)
-  
+
   // Rule configuration (JSON with type-specific fields)
-  config         Json
-  
+  config Json
+
   // Evaluation settings
-  evaluationInterval Int          @default(3600) // seconds
+  evaluationInterval Int       @default(3600) // seconds
   lastEvaluatedAt    DateTime?
-  
+
   // Notification settings
-  notifyEmail    Boolean         @default(true)
-  notifyInApp    Boolean         @default(true)
-  notifySlack    Boolean         @default(false)
-  
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  notifyEmail Boolean @default(true)
+  notifyInApp Boolean @default(true)
+  notifySlack Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   alertEvents  AlertEvent[]
@@ -759,32 +762,32 @@ model AlertRule {
 }
 
 model AlertEvent {
-  id             String            @id @default(cuid())
+  id             String           @id @default(cuid())
   organizationId String
   alertRuleId    String
-  status         AlertEventStatus  @default(TRIGGERED)
+  status         AlertEventStatus @default(TRIGGERED)
   severity       AlertSeverity
-  
-  title          String
-  message        String
-  
+
+  title   String
+  message String
+
   // Context data (metrics, thresholds, etc.)
-  context        Json
-  
-  triggeredAt    DateTime          @default(now())
+  context Json
+
+  triggeredAt    DateTime  @default(now())
   acknowledgedAt DateTime?
   acknowledgedBy String?
   resolvedAt     DateTime?
   resolvedBy     String?
   dismissedAt    DateTime?
   dismissedBy    String?
-  
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
 
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  alertRule      AlertRule    @relation(fields: [alertRuleId], references: [id], onDelete: Cascade)
-  acknowledgedByUser User?    @relation(fields: [acknowledgedBy], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  alertRule          AlertRule    @relation(fields: [alertRuleId], references: [id], onDelete: Cascade)
+  acknowledgedByUser User?        @relation(fields: [acknowledgedBy], references: [id], onDelete: SetNull)
 
   @@index([organizationId, status, triggeredAt])
   @@index([organizationId, severity, triggeredAt])
@@ -797,24 +800,24 @@ model AlertEvent {
 // ============================================================================
 
 model IngestionJob {
-  id             String            @id @default(cuid())
+  id             String             @id @default(cuid())
   organizationId String
   platform       PlatformCode
   jobType        IngestionJobType
   status         IngestionJobStatus @default(QUEUED)
-  idempotencyKey String            @unique
+  idempotencyKey String             @unique
 
-  payload        Json
+  payload Json
 
-  runAt          DateTime          @default(now())
-  attempts       Int               @default(0)
-  maxAttempts    Int               @default(8)
-  lockedAt       DateTime?
-  lockedBy       String?
+  runAt       DateTime  @default(now())
+  attempts    Int       @default(0)
+  maxAttempts Int       @default(8)
+  lockedAt    DateTime?
+  lockedBy    String?
 
-  lastError      String?
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
+  lastError String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
@@ -823,16 +826,16 @@ model IngestionJob {
 }
 
 model InAppNotification {
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   organizationId String
   userId         String
   title          String
   message        String
-  priority       String   @default("normal")
-  status         String   @default("pending")
+  priority       String    @default("normal")
+  status         String    @default("pending")
   actionUrl      String?
   metadata       Json?
-  createdAt      DateTime @default(now())
+  createdAt      DateTime  @default(now())
   readAt         DateTime?
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -844,13 +847,112 @@ model InAppNotification {
 }
 
 model OrganizationSettings {
-  id             String   @id @default(cuid())
-  organizationId String   @unique
-  alertSettings  Json?
+  id                  String   @id @default(cuid())
+  organizationId      String   @unique
+  alertSettings       Json?
   attributionSettings Json?
   trackingSettings    Json?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+// ============================================================================
+// IDENTITY RESOLUTION
+// ============================================================================
+
+model Identity {
+  id             String @id @default(cuid())
+  organizationId String
+  siteId         String
+
+  // Primary identity key (canonical identifier)
+  identityKey String @unique
+
+  // Identity signals
+  anonymousId String?
+  deviceId    String?
+  emailHash   String?
+  phoneHash   String?
+  customerId  String?
+  externalId  String?
+
+  // Metadata
+  firstSeenAt DateTime @default(now())
+  lastSeenAt  DateTime @default(now())
+  eventCount  Int      @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  site         TrackingSite @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  // Relationships
+  aliases      IdentityAlias[]
+  mergeHistory IdentityMerge[] @relation("SourceIdentity")
+  mergedInto   IdentityMerge[] @relation("TargetIdentity")
+
+  @@index([organizationId, siteId])
+  @@index([organizationId, anonymousId])
+  @@index([organizationId, emailHash])
+  @@index([organizationId, phoneHash])
+  @@index([organizationId, customerId])
+  @@index([siteId, anonymousId])
+  @@index([siteId, emailHash])
+}
+
+model IdentityAlias {
+  id         String @id @default(cuid())
+  identityId String
+
+  // Alias type and value
+  aliasType  String // "anonymousId", "deviceId", "emailHash", "phoneHash", "customerId", "externalId"
+  aliasValue String
+
+  // Metadata
+  firstSeenAt DateTime @default(now())
+  lastSeenAt  DateTime @default(now())
+
+  createdAt DateTime @default(now())
+
+  identity Identity @relation(fields: [identityId], references: [id], onDelete: Cascade)
+
+  @@unique([identityId, aliasType, aliasValue])
+  @@index([aliasType, aliasValue])
+  @@index([identityId])
+}
+
+model IdentityMerge {
+  id             String @id @default(cuid())
+  organizationId String
+
+  // Merge details
+  sourceIdentityId String
+  targetIdentityId String
+
+  // Merge reason
+  mergeReason   String // "emailHash", "phoneHash", "customerId", "manual"
+  matchingField String? // The field that triggered the merge
+  matchingValue String? // The value that matched (hashed if sensitive)
+
+  // Audit trail
+  mergedAt DateTime @default(now())
+  mergedBy String? // User ID if manual merge
+
+  // Metadata
+  sourceAliasCount Int @default(0)
+  targetAliasCount Int @default(0)
+
+  createdAt DateTime @default(now())
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  sourceIdentity Identity     @relation("SourceIdentity", fields: [sourceIdentityId], references: [id], onDelete: Cascade)
+  targetIdentity Identity     @relation("TargetIdentity", fields: [targetIdentityId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, mergedAt])
+  @@index([sourceIdentityId])
+  @@index([targetIdentityId])
+  @@index([mergeReason])
 }
