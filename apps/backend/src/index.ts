@@ -30,6 +30,7 @@ app.get("/health", async (request) => {
 // Register application routes
 await registerTrackRoutes(app);
 await registerEventRoutes(app);
+await registerConversionRoutes(app);
 
 // Start server
 await app.listen({
