@@ -1,7 +1,9 @@
 import Fastify from "fastify";
 import { env } from "./env";
 import { registerTrackRoutes } from "./api/routes/track";
+import { registerEventRoutes } from "./api/routes/events";
 import { registerLoggingMiddleware } from "./middleware/logging";
+import { registerRateLimitMiddleware } from "./middleware/rate-limit";
 const app = Fastify({
     logger: false, // We'll use our custom logger
     requestIdHeader: "x-request-id",
@@ -10,6 +12,8 @@ const app = Fastify({
 });
 // Register logging middleware first
 await registerLoggingMiddleware(app);
+// Register rate limiting middleware
+await registerRateLimitMiddleware(app);
 // Health check endpoint
 app.get("/health", async (request) => {
     request.log.debug("Health check requested");
@@ -18,6 +22,7 @@ app.get("/health", async (request) => {
 });
 // Register application routes
 await registerTrackRoutes(app);
+await registerEventRoutes(app);
 // Start server
 await app.listen({
     port: env.PORT,
