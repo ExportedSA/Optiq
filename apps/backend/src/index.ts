@@ -4,6 +4,7 @@ import type { HealthResponse } from "@optiq/shared";
 import { env } from "./env";
 import { registerTrackRoutes } from "./api/routes/track";
 import { registerEventRoutes } from "./api/routes/events";
+import { registerConversionRoutes } from "./api/routes/conversions";
 import { registerLoggingMiddleware } from "./middleware/logging";
 import { registerRateLimitMiddleware } from "./middleware/rate-limit";
 
