@@ -391,7 +391,6 @@ model Ad {
 
   dailyAdMetrics DailyAdMetric[]
 
-
   @@unique([organizationId, platformId, externalId])
   @@index([organizationId, campaignId])
   @@index([organizationId, adAccountId])
