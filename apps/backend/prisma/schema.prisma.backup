@@ -1,19 +1,3 @@
-// ============================================================================
-// OPTIQ - Enhanced Core Domain Model
-// ============================================================================
-// This is the enhanced schema with all core entities:
-// - Users & Workspaces (Organizations)
-// - Memberships & Roles
-// - Ad Platform Connections (Google, Meta, TikTok)
-// - Integration Tokens (Credentials)
-// - Events (Tracking Events & Touch Points)
-// - Costs (Daily Metrics)
-// - Conversions (Tracking Events with type CONVERSION)
-// - Journeys (Customer Journey tracking)
-// - Alert Rules & Alert Events
-// - Subscription Plans
-// ============================================================================
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -23,114 +7,11 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ============================================================================
-// ENUMS
-// ============================================================================
-
 enum MembershipRole {
   OWNER
   ADMIN
   MEMBER
-  VIEWER
 }
-
-enum PlatformCode {
-  META
-  GOOGLE_ADS
-  TIKTOK
-  LINKEDIN
-  X
-}
-
-enum EntityStatus {
-  ACTIVE
-  PAUSED
-  ARCHIVED
-  DELETED
-}
-
-enum IngestionJobStatus {
-  QUEUED
-  RUNNING
-  SUCCEEDED
-  FAILED
-  CANCELLED
-}
-
-enum IngestionJobType {
-  DAILY_SYNC
-  BACKFILL
-  MANUAL
-}
-
-enum TrackingEventType {
-  PAGE_VIEW
-  CONVERSION
-  CUSTOM
-}
-
-enum AttributionModel {
-  FIRST_TOUCH
-  LAST_TOUCH
-  LINEAR
-  TIME_DECAY
-  POSITION_BASED
-  DATA_DRIVEN
-}
-
-enum JourneyStatus {
-  IN_PROGRESS
-  CONVERTED
-  ABANDONED
-}
-
-enum AlertSeverity {
-  INFO
-  WARNING
-  CRITICAL
-}
-
-enum AlertRuleType {
-  SPEND_THRESHOLD
-  CONVERSION_DROP
-  CPA_SPIKE
-  ROAS_DROP
-  CLICK_ANOMALY
-  IMPRESSION_ANOMALY
-  CUSTOM
-}
-
-enum AlertRuleStatus {
-  ACTIVE
-  PAUSED
-  ARCHIVED
-}
-
-enum AlertEventStatus {
-  TRIGGERED
-  ACKNOWLEDGED
-  RESOLVED
-  DISMISSED
-}
-
-enum SubscriptionPlan {
-  FREE
-  STARTER
-  PROFESSIONAL
-  ENTERPRISE
-}
-
-enum SubscriptionStatus {
-  ACTIVE
-  TRIALING
-  PAST_DUE
-  CANCELED
-  PAUSED
-}
-
-// ============================================================================
-// USER & AUTHENTICATION
-// ============================================================================
 
 model User {
   id             String    @id @default(cuid())
@@ -149,10 +30,50 @@ model User {
 
   activeOrg      Organization? @relation("ActiveOrg", fields: [activeOrgId], references: [id], onDelete: SetNull)
   notifications  InAppNotification[]
-  alertEvents    AlertEvent[]
 
   @@index([activeOrgId])
-  @@index([email])
+}
+
+model Organization {
+  id          String        @id @default(cuid())
+  name        String
+  slug        String        @unique
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  members     Membership[]
+  activeUsers User[]        @relation("ActiveOrg")
+
+  adAccounts  AdAccount[]
+  campaigns   Campaign[]
+  ads         Ad[]
+  dailyAdMetrics       DailyAdMetric[]
+  dailyCampaignMetrics DailyCampaignMetric[]
+  dailyAccountMetrics  DailyAdAccountMetric[]
+
+  googleAdsCredentials GoogleAdsCredential[]
+  metaAdsCredentials   MetaAdsCredential[]
+  tikTokAdsCredentials TikTokAdsCredential[]
+
+  trackingSites TrackingSite[]
+  notifications  InAppNotification[]
+  ingestionJobs  IngestionJob[]
+  settings       OrganizationSettings?
+}
+
+model Membership {
+  id             String           @id @default(cuid())
+  userId         String
+  organizationId String
+  role           MembershipRole
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+  @@index([organizationId])
 }
 
 model Account {
@@ -194,106 +115,45 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-// ============================================================================
-// WORKSPACE (ORGANIZATION) & MEMBERSHIP
-// ============================================================================
-
-model Organization {
-  id          String        @id @default(cuid())
-  name        String
-  slug        String        @unique
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-
-  members     Membership[]
-  activeUsers User[]        @relation("ActiveOrg")
-
-  // Ad Platform Data
-  adAccounts  AdAccount[]
-  campaigns   Campaign[]
-  ads         Ad[]
-  dailyAdMetrics       DailyAdMetric[]
-  dailyCampaignMetrics DailyCampaignMetric[]
-  dailyAccountMetrics  DailyAdAccountMetric[]
-
-  // Integration Credentials
-  googleAdsCredentials GoogleAdsCredential[]
-  metaAdsCredentials   MetaAdsCredential[]
-  tikTokAdsCredentials TikTokAdsCredential[]
-
-  // Tracking & Attribution
-  trackingSites TrackingSite[]
-  journeys      Journey[]
-
-  // Alerts
-  alertRules    AlertRule[]
-  alertEvents   AlertEvent[]
-
-  // System
-  notifications  InAppNotification[]
-  ingestionJobs  IngestionJob[]
-  settings       OrganizationSettings?
-  subscription   Subscription?
-
-  @@index([slug])
+enum PlatformCode {
+  META
+  GOOGLE_ADS
+  TIKTOK
+  LINKEDIN
+  X
 }
 
-model Membership {
-  id             String           @id @default(cuid())
-  userId         String
-  organizationId String
-  role           MembershipRole
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
-
-  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, organizationId])
-  @@index([organizationId])
-  @@index([userId])
+enum EntityStatus {
+  ACTIVE
+  PAUSED
+  ARCHIVED
+  DELETED
 }
 
-// ============================================================================
-// SUBSCRIPTION & BILLING
-// ============================================================================
-
-model Subscription {
-  id                    String             @id @default(cuid())
-  organizationId        String             @unique
-  plan                  SubscriptionPlan
-  status                SubscriptionStatus
-  
-  // Stripe integration
-  stripeCustomerId      String?            @unique
-  stripeSubscriptionId  String?            @unique
-  stripePriceId         String?
-  
-  // Billing
-  currentPeriodStart    DateTime
-  currentPeriodEnd      DateTime
-  cancelAtPeriodEnd     Boolean            @default(false)
-  canceledAt            DateTime?
-  trialStart            DateTime?
-  trialEnd              DateTime?
-  
-  // Usage limits
-  monthlyEventLimit     Int?
-  monthlySpendLimit     BigInt?            // in micros
-  
-  createdAt             DateTime           @default(now())
-  updatedAt             DateTime           @updatedAt
-
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  @@index([stripeCustomerId])
-  @@index([stripeSubscriptionId])
-  @@index([status])
+enum IngestionJobStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+  CANCELLED
 }
 
-// ============================================================================
-// AD PLATFORMS & CONNECTIONS
-// ============================================================================
+enum IngestionJobType {
+  DAILY_SYNC
+}
+
+enum TrackingEventType {
+  PAGE_VIEW
+  CONVERSION
+}
+
+enum AttributionModel {
+  FIRST_TOUCH
+  LAST_TOUCH
+  LINEAR
+  TIME_DECAY
+  POSITION_BASED
+}
 
 model Platform {
   id        String       @id @default(cuid())
@@ -392,10 +252,6 @@ model Ad {
   @@index([campaignId])
 }
 
-// ============================================================================
-// COSTS (AD SPEND METRICS)
-// ============================================================================
-
 model DailyAdAccountMetric {
   id             String   @id @default(cuid())
   organizationId String
@@ -483,10 +339,6 @@ model DailyAdMetric {
   @@index([adId, date])
 }
 
-// ============================================================================
-// INTEGRATION TOKENS (CREDENTIALS)
-// ============================================================================
-
 model GoogleAdsCredential {
   id                 String   @id @default(cuid())
   organizationId      String
@@ -539,9 +391,31 @@ model TikTokAdsCredential {
   @@index([organizationId])
 }
 
-// ============================================================================
-// EVENTS (TRACKING & TOUCHPOINTS)
-// ============================================================================
+model IngestionJob {
+  id             String            @id @default(cuid())
+  organizationId String
+  platform       PlatformCode
+  jobType        IngestionJobType
+  status         IngestionJobStatus @default(QUEUED)
+  idempotencyKey String            @unique
+
+  payload        Json
+
+  runAt          DateTime          @default(now())
+  attempts       Int               @default(0)
+  maxAttempts    Int               @default(8)
+  lockedAt       DateTime?
+  lockedBy       String?
+
+  lastError      String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([status, runAt])
+  @@index([organizationId, platform, jobType])
+}
 
 model TrackingSite {
   id             String   @id @default(cuid())
@@ -586,22 +460,16 @@ model TrackingEvent {
   userAgent  String?
   ipHash     String?
 
-  // Conversion value (for CONVERSION type events)
-  valueMicros BigInt?
-
   properties Json?
 
   site TrackingSite @relation(fields: [siteId], references: [id], onDelete: Cascade)
 
   attributionLinks AttributionLink[]
-  journeyEvents    JourneyEvent[]
 
   @@unique([siteId, eventId])
   @@index([siteId, occurredAt])
   @@index([siteId, type, occurredAt])
   @@index([siteId, utmSource, occurredAt])
-  @@index([siteId, anonId, occurredAt])
-  @@index([siteId, sessionId, occurredAt])
 }
 
 model TouchPoint {
@@ -637,10 +505,8 @@ model TouchPoint {
   attributionLinks AttributionLink[]
 
   @@index([siteId, anonId, occurredAt])
-  @@index([siteId, sessionId, occurredAt])
   @@index([siteId, gclid])
   @@index([siteId, fbclid])
-  @@index([siteId, ttclid])
   @@index([siteId, utmSource, utmCampaign])
 }
 
@@ -665,165 +531,8 @@ model AttributionLink {
   @@index([conversionId])
 }
 
-// ============================================================================
-// JOURNEYS (CUSTOMER JOURNEY TRACKING)
-// ============================================================================
-
-model Journey {
-  id             String        @id @default(cuid())
-  organizationId String
-  anonId         String
-  sessionId      String
-  status         JourneyStatus @default(IN_PROGRESS)
-  
-  startedAt      DateTime      @default(now())
-  convertedAt    DateTime?
-  lastActivityAt DateTime      @default(now())
-  
-  // Conversion details
-  conversionValue BigInt?      // in micros
-  conversionName  String?
-  
-  // Journey metadata
-  firstUtmSource   String?
-  firstUtmMedium   String?
-  firstUtmCampaign String?
-  lastUtmSource    String?
-  lastUtmMedium    String?
-  lastUtmCampaign  String?
-  
-  touchPointCount  Int          @default(0)
-  eventCount       Int          @default(0)
-  
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  events       JourneyEvent[]
-
-  @@index([organizationId, status, lastActivityAt])
-  @@index([organizationId, anonId])
-  @@index([organizationId, sessionId])
-  @@index([organizationId, convertedAt])
-}
-
-model JourneyEvent {
-  id             String   @id @default(cuid())
-  journeyId      String
-  trackingEventId String
-  sequenceNumber Int
-  occurredAt     DateTime @default(now())
-
-  journey       Journey       @relation(fields: [journeyId], references: [id], onDelete: Cascade)
-  trackingEvent TrackingEvent @relation(fields: [trackingEventId], references: [id], onDelete: Cascade)
-
-  @@unique([journeyId, trackingEventId])
-  @@index([journeyId, sequenceNumber])
-  @@index([trackingEventId])
-}
-
-// ============================================================================
-// ALERTS
-// ============================================================================
-
-model AlertRule {
-  id             String          @id @default(cuid())
-  organizationId String
-  name           String
-  description    String?
-  type           AlertRuleType
-  severity       AlertSeverity
-  status         AlertRuleStatus @default(ACTIVE)
-  
-  // Rule configuration (JSON with type-specific fields)
-  config         Json
-  
-  // Evaluation settings
-  evaluationInterval Int          @default(3600) // seconds
-  lastEvaluatedAt    DateTime?
-  
-  // Notification settings
-  notifyEmail    Boolean         @default(true)
-  notifyInApp    Boolean         @default(true)
-  notifySlack    Boolean         @default(false)
-  
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  alertEvents  AlertEvent[]
-
-  @@index([organizationId, status])
-  @@index([organizationId, type])
-  @@index([status, lastEvaluatedAt])
-}
-
-model AlertEvent {
-  id             String            @id @default(cuid())
-  organizationId String
-  alertRuleId    String
-  status         AlertEventStatus  @default(TRIGGERED)
-  severity       AlertSeverity
-  
-  title          String
-  message        String
-  
-  // Context data (metrics, thresholds, etc.)
-  context        Json
-  
-  triggeredAt    DateTime          @default(now())
-  acknowledgedAt DateTime?
-  acknowledgedBy String?
-  resolvedAt     DateTime?
-  resolvedBy     String?
-  dismissedAt    DateTime?
-  dismissedBy    String?
-  
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
-
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  alertRule      AlertRule    @relation(fields: [alertRuleId], references: [id], onDelete: Cascade)
-  acknowledgedByUser User?    @relation(fields: [acknowledgedBy], references: [id], onDelete: SetNull)
-
-  @@index([organizationId, status, triggeredAt])
-  @@index([organizationId, severity, triggeredAt])
-  @@index([alertRuleId, triggeredAt])
-  @@index([status, triggeredAt])
-}
-
-// ============================================================================
-// SYSTEM & BACKGROUND JOBS
-// ============================================================================
-
-model IngestionJob {
-  id             String            @id @default(cuid())
-  organizationId String
-  platform       PlatformCode
-  jobType        IngestionJobType
-  status         IngestionJobStatus @default(QUEUED)
-  idempotencyKey String            @unique
-
-  payload        Json
-
-  runAt          DateTime          @default(now())
-  attempts       Int               @default(0)
-  maxAttempts    Int               @default(8)
-  lockedAt       DateTime?
-  lockedBy       String?
-
-  lastError      String?
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
-
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  @@index([status, runAt])
-  @@index([organizationId, platform, jobType])
-}
-
 model InAppNotification {
-  id             String   @id @default(cuid())
+  id             String   @id
   organizationId String
   userId         String
   title          String
@@ -847,8 +556,6 @@ model OrganizationSettings {
   id             String   @id @default(cuid())
   organizationId String   @unique
   alertSettings  Json?
-  attributionSettings Json?
-  trackingSettings    Json?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
