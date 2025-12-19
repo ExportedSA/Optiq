@@ -254,6 +254,11 @@ model Organization {
   identities     Identity[]
   identityMerges IdentityMerge[]
 
+  // Cost & Integration Data
+  costFacts              CostFact[]
+  integrationConnections IntegrationConnection[]
+  dailyRollups           DailyRollup[]
+
   @@index([slug])
 }
 
@@ -411,6 +416,8 @@ model Platform {
   dailyAdMetrics       DailyAdMetric[]
   dailyCampaignMetrics DailyCampaignMetric[]
   dailyAccountMetrics  DailyAdAccountMetric[]
+  costFacts            CostFact[]
+  dailyRollups         DailyRollup[]
 }
 
 model AdAccount {
@@ -434,6 +441,7 @@ model AdAccount {
   dailyAccountMetrics  DailyAdAccountMetric[]
   dailyCampaignMetrics DailyCampaignMetric[]
   dailyAdMetrics       DailyAdMetric[]
+  costFacts            CostFact[]
 
   @@unique([organizationId, platformId, externalId])
   @@index([organizationId, platformId])
@@ -462,6 +470,7 @@ model Campaign {
 
   dailyCampaignMetrics DailyCampaignMetric[]
   dailyAdMetrics       DailyAdMetric[]
+  dailyRollups         DailyRollup[]
 
   @@unique([organizationId, platformId, externalId])
   @@index([organizationId, adAccountId])
@@ -622,6 +631,59 @@ model CostFact {
   @@index([organizationId, date])
   @@index([organizationId, platformId, date])
   @@index([adAccountId, date])
+}
+
+// ============================================================================
+// DAILY ROLLUPS (AGGREGATED METRICS)
+// ============================================================================
+
+model DailyRollup {
+  id             String   @id @default(cuid())
+  organizationId String
+  date           DateTime @db.Date
+
+  // Grain: organization, platform, campaign, adset, ad
+  grain          String   @default("organization")
+  platformId     String?
+  campaignId     String?
+  adsetId        String?
+  adId           String?
+
+  // Cost metrics (from ad platforms)
+  impressions    BigInt   @default(0)
+  clicks         BigInt   @default(0)
+  spendMicros    BigInt   @default(0)
+
+  // Conversion metrics (from attribution)
+  conversions           Float    @default(0)  // Can be fractional due to attribution
+  conversionValue       BigInt   @default(0)  // Revenue in micros
+  attributedConversions Float    @default(0)  // Attributed conversions (weighted)
+
+  // Calculated metrics
+  cpa            Float?   // Cost per acquisition (spend / conversions)
+  roas           Float?   // Return on ad spend (revenue / spend)
+  ctr            Float?   // Click-through rate (clicks / impressions)
+  cpc            Float?   // Cost per click (spend / clicks)
+
+  // Waste metrics
+  wasteSpendMicros BigInt   @default(0)  // Spend with no conversions
+  wastePct         Float    @default(0)  // Waste percentage
+
+  // Attribution model used
+  attributionModel String   @default("LAST_TOUCH")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  platform     Platform?    @relation(fields: [platformId], references: [id], onDelete: Restrict)
+  campaign     Campaign?    @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, date, grain, platformId, campaignId, adsetId, adId, attributionModel])
+  @@index([organizationId, date])
+  @@index([organizationId, platformId, date])
+  @@index([organizationId, campaignId, date])
+  @@index([date, grain])
 }
 
 // ============================================================================

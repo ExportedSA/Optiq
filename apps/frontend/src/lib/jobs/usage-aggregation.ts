@@ -7,15 +7,44 @@ import { PLAN_DEFINITIONS, calculateOverages, type PlanTier } from "@optiq/share
  * 
  * Runs daily to aggregate usage counters and update billing records.
  * This is a simplified version that can run in Vercel serverless functions.
+ * 
+ * Features:
+ * - Aggregates event counts per workspace per day
+ * - Writes to DailyUsageCounter table (idempotent upsert)
+ * - Updates UsageRecord for billing period
+ * - Supports backfill for missing days via USAGE_BACKFILL_DAYS env var
  */
 
-export async function runUsageAggregation(): Promise<void> {
-  const logger = appLogger.child({ job: "usage-aggregation" });
-  logger.info("Starting usage aggregation");
+export interface AggregationResult {
+  processedSubscriptions: number;
+  processedDays: number;
+  errors: number;
+}
 
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  yesterday.setHours(0, 0, 0, 0);
+/**
+ * Run usage aggregation for all subscriptions
+ * 
+ * @param options - Optional configuration
+ * @param options.backfillDays - Number of days to backfill (default: 1 = yesterday only)
+ * @param options.organizationId - Specific organization to process (optional)
+ */
+export async function runUsageAggregation(options?: {
+  backfillDays?: number;
+  organizationId?: string;
+}): Promise<AggregationResult> {
+  const logger = appLogger.child({ job: "usage-aggregation" });
+  
+  // Check for backfill mode via env var or options
+  const backfillDays = options?.backfillDays ?? 
+    (process.env.USAGE_BACKFILL_DAYS ? parseInt(process.env.USAGE_BACKFILL_DAYS, 10) : 1);
+  
+  logger.info("Starting usage aggregation", { backfillDays, organizationId: options?.organizationId });
+
+  const result: AggregationResult = {
+    processedSubscriptions: 0,
+    processedDays: 0,
+    errors: 0,
+  };
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -35,17 +64,38 @@ export async function runUsageAggregation(): Promise<void> {
     },
   });
 
-  logger.info(`Processing ${subscriptions.length} subscriptions`);
+  // Filter by organization if specified
+  const filteredSubscriptions = options?.organizationId
+    ? subscriptions.filter((s) => s.organizationId === options.organizationId)
+    : subscriptions;
 
-  for (const subscription of subscriptions) {
-    try {
-      await aggregateSubscriptionUsage(subscription, yesterday, today, logger);
-    } catch (error) {
-      logger.error(`Error aggregating usage for subscription ${subscription.id}`, error as Error);
+  logger.info(`Processing ${filteredSubscriptions.length} subscriptions`);
+
+  // Process each day in the backfill range
+  for (let dayOffset = backfillDays; dayOffset >= 1; dayOffset--) {
+    const targetDate = new Date(today);
+    targetDate.setDate(targetDate.getDate() - dayOffset);
+    
+    const nextDate = new Date(targetDate);
+    nextDate.setDate(nextDate.getDate() + 1);
+
+    logger.debug(`Processing date: ${targetDate.toISOString().split("T")[0]}`);
+
+    for (const subscription of filteredSubscriptions) {
+      try {
+        await aggregateSubscriptionUsage(subscription, targetDate, nextDate, logger);
+        result.processedDays++;
+      } catch (error) {
+        logger.error(`Error aggregating usage for subscription ${subscription.id}`, error as Error);
+        result.errors++;
+      }
     }
+    
+    result.processedSubscriptions = filteredSubscriptions.length;
   }
 
-  logger.info("Usage aggregation completed");
+  logger.info("Usage aggregation completed", { ...result });
+  return result;
 }
 
 async function aggregateSubscriptionUsage(

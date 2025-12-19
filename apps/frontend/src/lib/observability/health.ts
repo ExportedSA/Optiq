@@ -5,6 +5,7 @@
  */
 
 import { prisma } from "@/lib/prisma";
+import { checkRedisHealth, isRedisConfigured } from "@/lib/redis";
 import { appLogger } from "./logger";
 
 export interface HealthStatus {
@@ -90,15 +91,44 @@ function checkMemory(): ComponentHealth {
 }
 
 /**
+ * Check Redis connectivity
+ */
+async function checkRedis(): Promise<ComponentHealth> {
+  if (!isRedisConfigured()) {
+    return {
+      status: "healthy",
+      message: "Redis not configured (optional)",
+    };
+  }
+
+  const result = await checkRedisHealth();
+  
+  if (!result.healthy) {
+    return {
+      status: "degraded", // Redis is optional, so degraded not unhealthy
+      latencyMs: result.latencyMs,
+      message: result.error,
+    };
+  }
+
+  return {
+    status: result.latencyMs && result.latencyMs > 500 ? "degraded" : "healthy",
+    latencyMs: result.latencyMs,
+    message: result.latencyMs && result.latencyMs > 500 ? "High latency" : undefined,
+  };
+}
+
+/**
  * Get full health status
  */
 export async function getHealthStatus(): Promise<HealthStatus> {
-  const [database, memory] = await Promise.all([
+  const [database, memory, redis] = await Promise.all([
     checkDatabase(),
     Promise.resolve(checkMemory()),
+    checkRedis(),
   ]);
 
-  const checks = { database, memory };
+  const checks = { database, memory, redis };
 
   // Determine overall status
   const statuses = Object.values(checks).map((c) => c.status);

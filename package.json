@@ -6,16 +6,25 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "npm run build -w @optiq/shared && concurrently \"npm run dev -w @optiq/backend\" \"npm run dev -w @optiq/frontend\"",
+    "dev": "npm run dev:setup && concurrently -n db,shared,backend,frontend -c blue,yellow,green,cyan \"npm run dev:db\" \"npm run dev:shared\" \"npm run dev:backend:wait\" \"npm run dev:frontend:wait\"",
+    "dev:setup": "npm run build -w @optiq/shared",
+    "dev:db": "docker compose up postgres",
+    "dev:db:start": "docker compose up -d postgres && npm run dev:db:wait",
+    "dev:db:wait": "node scripts/wait-for-db.js",
+    "dev:db:stop": "docker compose down",
+    "dev:shared": "npm run dev -w @optiq/shared",
+    "dev:backend": "npm run dev -w @optiq/backend",
+    "dev:backend:wait": "node scripts/wait-for-db.js && npm run prisma:migrate -w @optiq/backend && npm run dev -w @optiq/backend",
     "dev:frontend": "npm run dev -w @optiq/frontend",
-    "dev:backend": "npm run build -w @optiq/shared && npm run dev -w @optiq/backend",
+    "dev:frontend:wait": "node scripts/wait-for-port.js 3001 && npm run dev -w @optiq/frontend",
     "build": "npm run build -w @optiq/shared && npm run prisma:generate -w @optiq/backend && npm run build -w @optiq/backend && npm run build -w @optiq/frontend",
     "typecheck": "tsc --build",
     "lint": "npm -ws run lint",
-    "test": "echo \"No tests yet - add tests with: npm install --save-dev vitest @vitest/ui\" && exit 0",
+    "test": "npm run test -w @optiq/shared -w @optiq/backend --if-present",
     "test:ci": "npm run test",
     "clean": "npm -ws run clean && rm -rf node_modules",
-    "format": "prettier . --write"
+    "format": "prettier . --write",
+    "prisma:studio": "npm run prisma:studio -w @optiq/backend"
   },
   "devDependencies": {
     "@eslint/js": "^9.20.0",

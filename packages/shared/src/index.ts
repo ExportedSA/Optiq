@@ -3,6 +3,7 @@ export * from "./utils";
 export * from "./logger";
 export * from "./normalization";
 export * from "./pricing";
+export * from "./middleware";
 
 export {
   AppEnvSchema,

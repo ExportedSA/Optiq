@@ -11,11 +11,28 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  # Shared test environment variables
+  DATABASE_URL: postgresql://test:test@localhost:5432/test
+  NEXTAUTH_SECRET: test-secret-minimum-32-characters-long-for-validation
+  DATA_ENCRYPTION_KEY: test-encryption-key-32-chars-minimum
+  GOOGLE_OAUTH_CLIENT_ID: test-client-id
+  GOOGLE_OAUTH_CLIENT_SECRET: test-client-secret
+  GOOGLE_OAUTH_REDIRECT_URI: http://localhost:3000/callback
+  GOOGLE_ADS_DEVELOPER_TOKEN: test-dev-token
+  META_APP_ID: test-meta-app-id
+  META_APP_SECRET: test-meta-secret
+  META_OAUTH_REDIRECT_URI: http://localhost:3000/callback
+  META_REDIRECT_URI: http://localhost:3000/callback
+  TIKTOK_APP_ID: test-tiktok-id
+  TIKTOK_APP_SECRET: test-tiktok-secret
+  TIKTOK_OAUTH_REDIRECT_URI: http://localhost:3000/callback
+
 jobs:
-  quality-gate:
-    name: Quality Gate
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
 
     steps:
       - name: Checkout code
@@ -35,32 +52,81 @@ jobs:
 
       - name: Lint
         run: npm run lint
-        continue-on-error: false
+
+  typecheck:
+    name: Type Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npm run prisma:generate -w @optiq/backend
 
       - name: Type check
         run: npm run typecheck
-        continue-on-error: false
 
-      - name: Build
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npm run prisma:generate -w @optiq/backend
+
+      - name: Run tests
+        run: npm run test
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [lint, typecheck]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npm run prisma:generate -w @optiq/backend
+
+      - name: Build all packages
         run: npm run build
-        continue-on-error: false
-        env:
-          # Provide minimal env vars for build
-          DATABASE_URL: postgresql://test:test@localhost:5432/test
-          NEXTAUTH_SECRET: test-secret-minimum-32-characters-long-for-validation
-          DATA_ENCRYPTION_KEY: test-encryption-key-32-chars-min
-          GOOGLE_OAUTH_CLIENT_ID: test-client-id
-          GOOGLE_OAUTH_CLIENT_SECRET: test-client-secret
-          GOOGLE_OAUTH_REDIRECT_URI: http://localhost:3000/callback
-          GOOGLE_ADS_DEVELOPER_TOKEN: test-dev-token
-          META_APP_ID: test-meta-app-id
-          META_APP_SECRET: test-meta-secret
-          META_OAUTH_REDIRECT_URI: http://localhost:3000/callback
-          TIKTOK_APP_ID: test-tiktok-id
-          TIKTOK_APP_SECRET: test-tiktok-secret
-          TIKTOK_OAUTH_REDIRECT_URI: http://localhost:3000/callback
 
-      - name: Check for build artifacts
+      - name: Verify build artifacts
         run: |
           echo "Checking build outputs..."
           test -d packages/shared/dist || (echo "❌ shared package not built" && exit 1)
@@ -68,27 +134,12 @@ jobs:
           test -d apps/frontend/.next || (echo "❌ frontend not built" && exit 1)
           echo "✅ All build artifacts present"
 
-  # Optional: Add test job when tests are implemented
-  # test:
-  #   name: Unit Tests
-  #   runs-on: ubuntu-latest
-  #   timeout-minutes: 10
-  #   needs: quality-gate
-  #
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v4
-  #
-  #     - name: Setup Node.js
-  #       uses: actions/setup-node@v4
-  #       with:
-  #         node-version: '20'
-  #         cache: 'npm'
-  #
-  #     - name: Install dependencies
-  #       run: npm ci
-  #
-  #     - name: Run tests
-  #       run: npm run test
-  #       env:
-  #         NODE_ENV: test
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output
+          path: |
+            packages/shared/dist
+            apps/backend/dist
+            apps/frontend/.next
+          retention-days: 1

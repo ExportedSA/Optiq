@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 
 import { appLogger } from "@/lib/observability";
+import { verifyCronAuth } from "@/lib/cron-auth";
+import { withJobLock } from "@/lib/redis";
 
 export const runtime = "nodejs";
 export const maxDuration = 300; // 5 minutes
+
+const JOB_NAME = "daily-sync";
 
 /**
  * Cron Job: Daily Ad Data Sync
@@ -12,26 +16,44 @@ export const maxDuration = 300; // 5 minutes
  * Syncs ad spend and performance data from connected platforms.
  */
 export async function GET(req: Request) {
-  const authHeader = req.headers.get("authorization");
-  const cronSecret = process.env.CRON_SECRET;
-
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-    appLogger.warn("Unauthorized cron request", { job: "daily-sync" });
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // Verify cron authentication
+  const auth = verifyCronAuth(req, JOB_NAME);
+  if (!auth.authorized) {
+    return auth.response!;
   }
 
   appLogger.info("Starting daily sync cron job");
 
-  try {
-    // This would call the actual sync jobs
-    // For now, return success as a placeholder
-    appLogger.info("Daily sync cron job completed");
-    return NextResponse.json({ success: true, timestamp: new Date().toISOString() });
-  } catch (error) {
-    appLogger.error("Daily sync cron job failed", error as Error);
-    return NextResponse.json(
-      { error: "Job failed", message: (error as Error).message },
-      { status: 500 }
-    );
+  // Acquire distributed lock to prevent concurrent execution
+  const result = await withJobLock(
+    JOB_NAME,
+    async () => {
+      const { runDailySync } = await import("@/lib/jobs/daily-sync");
+      const syncResult = await runDailySync();
+      appLogger.info("Daily sync job executed", {
+        successfulSyncs: syncResult.successfulSyncs,
+        failedSyncs: syncResult.failedSyncs,
+        totalConnections: syncResult.totalConnections,
+      });
+      return syncResult;
+    },
+    { ttlSeconds: maxDuration, bufferSeconds: 60 }
+  );
+
+  if (result.skipped) {
+    appLogger.info("Daily sync cron job skipped (already running)");
+    return NextResponse.json({
+      success: true,
+      skipped: true,
+      message: "Job already running",
+      timestamp: new Date().toISOString(),
+    });
   }
+
+  appLogger.info("Daily sync cron job completed");
+  return NextResponse.json({
+    success: true,
+    skipped: false,
+    timestamp: new Date().toISOString(),
+  });
 }

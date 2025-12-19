@@ -5,6 +5,8 @@ import { metricsAggregator } from "@/lib/metrics";
 import { wasteEvaluator } from "@/lib/waste";
 import type { MetricsSummary } from "@/lib/metrics";
 
+const MICROS_PER_UNIT = 1_000_000;
+
 export interface DashboardKpis {
   totalSpend: number;
   totalConversions: number;
@@ -25,6 +27,10 @@ export interface DashboardKpis {
   } | null;
 }
 
+/**
+ * Get dashboard KPIs from daily_rollups (fast path)
+ * Falls back to metrics aggregator if no rollups exist
+ */
 export async function getDashboardKpis(params: {
   organizationId: string;
   days?: number;
@@ -37,9 +43,131 @@ export async function getDashboardKpis(params: {
   startDate.setDate(startDate.getDate() - days + 1);
   startDate.setHours(0, 0, 0, 0);
 
+  // Try to get data from daily_rollups first (fast path)
+  const rollupKpis = await getDashboardKpisFromRollups(params.organizationId, startDate, endDate, days);
+  if (rollupKpis) {
+    return rollupKpis;
+  }
+
+  // Fall back to metrics aggregator (slower but works without rollups)
+  return getDashboardKpisFromMetrics(params.organizationId, startDate, endDate, days);
+}
+
+/**
+ * Get KPIs from pre-aggregated daily_rollups
+ */
+async function getDashboardKpisFromRollups(
+  organizationId: string,
+  startDate: Date,
+  endDate: Date,
+  days: number
+): Promise<DashboardKpis | null> {
+  // Get current period rollups at organization level
+  const currentRollups = await prisma.dailyRollup.findMany({
+    where: {
+      organizationId,
+      grain: "organization",
+      date: { gte: startDate, lte: endDate },
+    },
+  });
+
+  if (currentRollups.length === 0) {
+    return null; // No rollups, fall back to metrics
+  }
+
+  // Aggregate current period
+  const current = aggregateRollups(currentRollups);
+
+  // Get previous period for comparison
+  const prevEndDate = new Date(startDate);
+  prevEndDate.setDate(prevEndDate.getDate() - 1);
+  const prevStartDate = new Date(prevEndDate);
+  prevStartDate.setDate(prevStartDate.getDate() - days + 1);
+
+  const previousRollups = await prisma.dailyRollup.findMany({
+    where: {
+      organizationId,
+      grain: "organization",
+      date: { gte: prevStartDate, lte: prevEndDate },
+    },
+  });
+
+  const previous = previousRollups.length > 0 ? aggregateRollups(previousRollups) : null;
+
+  // Calculate changes
+  const changes = previous ? {
+    spend: current.spend > 0 && previous.spend > 0 
+      ? ((current.spend - previous.spend) / previous.spend) * 100 
+      : 0,
+    conversions: current.conversions > 0 && previous.conversions > 0
+      ? ((current.conversions - previous.conversions) / previous.conversions) * 100
+      : 0,
+    cpa: current.cpa !== null && previous.cpa !== null && previous.cpa > 0
+      ? ((current.cpa - previous.cpa) / previous.cpa) * 100
+      : null,
+    wastedSpendPercent: current.wastedSpendPercent - previous.wastedSpendPercent,
+  } : null;
+
+  return {
+    totalSpend: current.spend,
+    totalConversions: current.conversions,
+    overallCpa: current.cpa,
+    wastedSpendPercent: current.wastedSpendPercent,
+    roas: current.roas,
+    previousPeriod: previous ? {
+      totalSpend: previous.spend,
+      totalConversions: previous.conversions,
+      overallCpa: previous.cpa,
+      wastedSpendPercent: previous.wastedSpendPercent,
+    } : null,
+    changes,
+  };
+}
+
+/**
+ * Aggregate rollup records into summary metrics
+ */
+function aggregateRollups(rollups: Array<{
+  spendMicros: bigint;
+  conversions: number;
+  conversionValue: bigint;
+  wasteSpendMicros: bigint;
+  cpa: number | null;
+  roas: number | null;
+}>): {
+  spend: number;
+  conversions: number;
+  revenue: number;
+  cpa: number | null;
+  roas: number | null;
+  wastedSpendPercent: number;
+} {
+  const totalSpendMicros = rollups.reduce((sum, r) => sum + Number(r.spendMicros), 0);
+  const totalConversions = rollups.reduce((sum, r) => sum + r.conversions, 0);
+  const totalRevenueMicros = rollups.reduce((sum, r) => sum + Number(r.conversionValue), 0);
+  const totalWasteMicros = rollups.reduce((sum, r) => sum + Number(r.wasteSpendMicros), 0);
+
+  const spend = totalSpendMicros / MICROS_PER_UNIT;
+  const revenue = totalRevenueMicros / MICROS_PER_UNIT;
+  const cpa = totalConversions > 0 ? spend / totalConversions : null;
+  const roas = spend > 0 ? revenue / spend : null;
+  const wastedSpendPercent = spend > 0 ? (totalWasteMicros / MICROS_PER_UNIT / spend) * 100 : 0;
+
+  return { spend, conversions: totalConversions, revenue, cpa, roas, wastedSpendPercent };
+}
+
+/**
+ * Get KPIs from metrics aggregator (fallback)
+ */
+async function getDashboardKpisFromMetrics(
+  organizationId: string,
+  startDate: Date,
+  endDate: Date,
+  days: number
+): Promise<DashboardKpis> {
   const summary = await metricsAggregator.getSummary({
     filter: {
-      organizationId: params.organizationId,
+      organizationId,
       dateRange: { start: startDate, end: endDate },
     },
     entityLevel: "organization",
@@ -47,13 +175,13 @@ export async function getDashboardKpis(params: {
   });
 
   const wasteAnalysis = await wasteEvaluator.evaluateOrganization({
-    organizationId: params.organizationId,
+    organizationId,
     windowDays: days,
     endDate,
   });
 
   const totalWastedSpend = wasteAnalysis.alerts.reduce(
-    (sum, a) => sum + Number(a.spendMicros) / 1_000_000,
+    (sum, a) => sum + Number(a.spendMicros) / MICROS_PER_UNIT,
     0
   );
 
@@ -68,13 +196,13 @@ export async function getDashboardKpis(params: {
     prevEndDate.setDate(prevEndDate.getDate() - 1);
 
     const prevWasteAnalysis = await wasteEvaluator.evaluateOrganization({
-      organizationId: params.organizationId,
+      organizationId,
       windowDays: days,
       endDate: prevEndDate,
     });
 
     const prevTotalWasted = prevWasteAnalysis.alerts.reduce(
-      (sum, a) => sum + Number(a.spendMicros) / 1_000_000,
+      (sum, a) => sum + Number(a.spendMicros) / MICROS_PER_UNIT,
       0
     );
 

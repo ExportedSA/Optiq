@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 
 import { appLogger } from "@/lib/observability";
+import { verifyCronAuth } from "@/lib/cron-auth";
+import { withJobLock } from "@/lib/redis";
 
 export const runtime = "nodejs";
 export const maxDuration = 300; // 5 minutes
+
+const JOB_NAME = "usage-aggregation";
 
 /**
  * Cron Job: Usage Aggregation
@@ -12,32 +16,38 @@ export const maxDuration = 300; // 5 minutes
  * Aggregates daily usage counters and updates billing period records.
  */
 export async function GET(req: Request) {
-  // Verify cron secret (Vercel adds this header for cron jobs)
-  const authHeader = req.headers.get("authorization");
-  const cronSecret = process.env.CRON_SECRET;
-
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-    appLogger.warn("Unauthorized cron request", {
-      job: "usage-aggregation",
-      hasAuth: !!authHeader,
-    });
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // Verify cron authentication
+  const auth = verifyCronAuth(req, JOB_NAME);
+  if (!auth.authorized) {
+    return auth.response!;
   }
 
   appLogger.info("Starting usage aggregation cron job");
 
-  try {
-    // Dynamic import to avoid loading job code on every request
-    const { runUsageAggregation } = await import("@/lib/jobs/usage-aggregation");
-    await runUsageAggregation();
+  // Acquire distributed lock to prevent concurrent execution
+  const result = await withJobLock(
+    JOB_NAME,
+    async () => {
+      const { runUsageAggregation } = await import("@/lib/jobs/usage-aggregation");
+      await runUsageAggregation();
+    },
+    { ttlSeconds: maxDuration, bufferSeconds: 60 }
+  );
 
-    appLogger.info("Usage aggregation cron job completed");
-    return NextResponse.json({ success: true, timestamp: new Date().toISOString() });
-  } catch (error) {
-    appLogger.error("Usage aggregation cron job failed", error as Error);
-    return NextResponse.json(
-      { error: "Job failed", message: (error as Error).message },
-      { status: 500 }
-    );
+  if (result.skipped) {
+    appLogger.info("Usage aggregation cron job skipped (already running)");
+    return NextResponse.json({
+      success: true,
+      skipped: true,
+      message: "Job already running",
+      timestamp: new Date().toISOString(),
+    });
   }
+
+  appLogger.info("Usage aggregation cron job completed");
+  return NextResponse.json({
+    success: true,
+    skipped: false,
+    timestamp: new Date().toISOString(),
+  });
 }

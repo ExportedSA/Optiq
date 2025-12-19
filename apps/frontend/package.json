@@ -17,6 +17,7 @@
   "dependencies": {
     "@optiq/shared": "*",
     "@next-auth/prisma-adapter": "^1.0.7",
+    "@upstash/redis": "^1.28.0",
     "@prisma/client": "^6.16.0",
     "argon2": "^0.44.0",
     "google-auth-library": "^9.15.1",
