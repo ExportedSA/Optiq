@@ -13,6 +13,16 @@ export interface HealthStatus {
   timestamp: string;
   version: string;
   uptime: number;
+  runtime?: {
+    nodeVersion: string;
+    platform: string;
+    arch: string;
+    environment: string;
+  };
+  git?: {
+    commit: string;
+    branch?: string;
+  };
   checks: {
     database: ComponentHealth;
     memory: ComponentHealth;
@@ -29,6 +39,31 @@ export interface ComponentHealth {
 
 const startTime = Date.now();
 const APP_VERSION = process.env.npm_package_version ?? process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? "unknown";
+
+/**
+ * Get sanitized runtime metadata (no secrets)
+ */
+function getRuntimeMetadata() {
+  return {
+    nodeVersion: process.version,
+    platform: process.platform,
+    arch: process.arch,
+    environment: process.env.NODE_ENV ?? "unknown",
+  };
+}
+
+/**
+ * Get sanitized git metadata (no secrets)
+ */
+function getGitMetadata() {
+  const commit = process.env.VERCEL_GIT_COMMIT_SHA ?? process.env.GIT_COMMIT ?? "unknown";
+  const branch = process.env.VERCEL_GIT_COMMIT_REF ?? process.env.GIT_BRANCH;
+  
+  return {
+    commit: commit.slice(0, 7), // Short commit hash only
+    branch: branch ? branch.replace(/^refs\/heads\//, "") : undefined,
+  };
+}
 
 /**
  * Check database connectivity
@@ -119,7 +154,7 @@ async function checkRedis(): Promise<ComponentHealth> {
 }
 
 /**
- * Get full health status
+ * Get full health status with metadata
  */
 export async function getHealthStatus(): Promise<HealthStatus> {
   const [database, memory, redis] = await Promise.all([
@@ -145,6 +180,8 @@ export async function getHealthStatus(): Promise<HealthStatus> {
     timestamp: new Date().toISOString(),
     version: APP_VERSION,
     uptime: Math.round((Date.now() - startTime) / 1000),
+    runtime: getRuntimeMetadata(),
+    git: getGitMetadata(),
     checks,
   };
 
