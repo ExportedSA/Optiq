@@ -138,7 +138,7 @@ export abstract class BaseIntegration implements Integration {
       throw new Error(`API request failed: ${response.status} ${error}`);
     }
 
-    return response.json();
+    return response.json() as unknown as Promise<T>;
   }
 
   /**
