@@ -1,5 +1,5 @@
 var R=require("../../../../../chunks/[turbopack]_runtime.js")("server/app/api/integrations/google-ads/callback/route.js")
-R.c("server/chunks/[root-of-the-server]__33e3bcdd._.js")
+R.c("server/chunks/[root-of-the-server]__662e6b16._.js")
 R.c("server/chunks/c9d07_next_dist_a43554ac._.js")
 R.c("server/chunks/c9d07_@opentelemetry_api_build_esm_19dbe391._.js")
 R.c("server/chunks/c9d07_next_ba6f97dc._.js")

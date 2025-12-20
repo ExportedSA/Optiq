@@ -1,5 +1,5 @@
 var R=require("../../../../../../chunks/[turbopack]_runtime.js")("server/app/api/integrations/tiktok-ads/oauth/callback/route.js")
-R.c("server/chunks/[root-of-the-server]__0427e58f._.js")
+R.c("server/chunks/[root-of-the-server]__f5bd40f0._.js")
 R.c("server/chunks/c9d07_@opentelemetry_api_build_esm_19dbe391._.js")
 R.c("server/chunks/c9d07_next_dist_a43554ac._.js")
 R.c("server/chunks/[root-of-the-server]__93b885f5._.js")

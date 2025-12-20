@@ -1,5 +1,5 @@
 var R=require("../../../chunks/[turbopack]_runtime.js")("server/app/api/waste/route.js")
-R.c("server/chunks/[root-of-the-server]__fe97d0d6._.js")
+R.c("server/chunks/[root-of-the-server]__a3dd1057._.js")
 R.c("server/chunks/c9d07_next_dist_esm_build_templates_app-route_10a0e23d.js")
 R.c("server/chunks/c9d07_@opentelemetry_api_build_esm_19dbe391._.js")
 R.c("server/chunks/c9d07_next_dist_a43554ac._.js")

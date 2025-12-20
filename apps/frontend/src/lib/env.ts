@@ -36,6 +36,11 @@ const EnvSchema = z.object({
   TIKTOK_OAUTH_REDIRECT_URI: z.string().url().describe("OAuth redirect URI for TikTok"),
   TIKTOK_API_BASE_URL: z.string().url().default("https://business-api.tiktok.com").describe("TikTok Business API base URL"),
   
+  // Stripe (Optional)
+  STRIPE_SECRET_KEY: z.string().startsWith("sk_").optional().describe("Stripe secret key (must start with sk_)"),
+  STRIPE_WEBHOOK_SECRET: z.string().startsWith("whsec_").optional().describe("Stripe webhook signing secret (must start with whsec_)"),
+  NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().startsWith("pk_").optional().describe("Stripe publishable key (must start with pk_)"),
+  
   // Email Notifications (Optional)
   SMTP_HOST: z.string().optional().describe("SMTP server hostname"),
   SMTP_PORT: z.coerce.number().int().min(1).max(65535).optional().describe("SMTP server port"),
@@ -67,6 +72,9 @@ const base = loadEnv(
     TIKTOK_APP_SECRET: process.env.TIKTOK_APP_SECRET,
     TIKTOK_OAUTH_REDIRECT_URI: process.env.TIKTOK_OAUTH_REDIRECT_URI,
     TIKTOK_API_BASE_URL: process.env.TIKTOK_API_BASE_URL,
+    STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
+    STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
+    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
     SMTP_HOST: process.env.SMTP_HOST,
     SMTP_PORT: process.env.SMTP_PORT,
     SMTP_USER: process.env.SMTP_USER,
@@ -83,6 +91,8 @@ const base = loadEnv(
       "GOOGLE_ADS_DEVELOPER_TOKEN",
       "META_APP_SECRET",
       "TIKTOK_APP_SECRET",
+      "STRIPE_SECRET_KEY",
+      "STRIPE_WEBHOOK_SECRET",
       "SMTP_PASSWORD",
     ],
   },

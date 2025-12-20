@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { PlanTier } from "@optiq/shared";
+import { env } from "@/lib/env";
 
 /**
  * Stripe Products & Prices Mapping
@@ -20,9 +21,9 @@ export interface StripeProductConfig {
 }
 
 export const STRIPE_CONFIG = {
-  publishableKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "",
-  secretKey: process.env.STRIPE_SECRET_KEY ?? "",
-  webhookSecret: process.env.STRIPE_WEBHOOK_SECRET ?? "",
+  publishableKey: env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "",
+  secretKey: env.STRIPE_SECRET_KEY ?? "",
+  webhookSecret: env.STRIPE_WEBHOOK_SECRET ?? "",
   
   products: {
     STARTER: {
