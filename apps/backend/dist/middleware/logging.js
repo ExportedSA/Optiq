@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { createLogger } from "@optiq/shared";
+import { createLogger } from "@optiq/shared/logger";
 /**
  * Register logging middleware with correlation IDs
  */

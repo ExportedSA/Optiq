@@ -4,7 +4,7 @@
  * Simple cron-like scheduler for background jobs
  * In production, consider using a proper job queue like BullMQ or Agenda
  */
-import { createLogger } from "@optiq/shared";
+import { createLogger } from "@optiq/shared/logger";
 import { runAlertsEngineJob } from "./alerts-engine";
 const logger = createLogger({ name: "job-scheduler" });
 /**

@@ -8,7 +8,18 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
+      "react-server": "./dist/index.js",
+      "edge-light": "./dist/index.js",
+      "browser": "./dist/index.js",
       "default": "./dist/index.js"
+    },
+    "./logger": {
+      "types": "./dist/logger-web.d.ts",
+      "react-server": "./dist/logger-web.js",
+      "edge-light": "./dist/logger-web.js",
+      "browser": "./dist/logger-web.js",
+      "node": "./dist/logger-node.js",
+      "default": "./dist/logger-web.js"
     }
   },
   "files": [

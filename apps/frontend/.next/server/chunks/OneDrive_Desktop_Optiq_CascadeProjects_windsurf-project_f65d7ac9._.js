@@ -1,0 +1,64 @@
+module.exports=[12941,e=>{"use strict";e.i(42960);var t=e.i(91490);e.s(["PLAN_DEFINITIONS",()=>t.PLAN_DEFINITIONS,"calculateOverages",()=>t.calculateOverages])},67085,63943,e=>{"use strict";e.i(55007);var t=e.i(60806);e.i(1466);var a=e.i(12941);function n(e,t){let a,n=e/t.monthlyEventLimit*100,r=Math.max(0,t.monthlyEventLimit-e),i="none",o=!1;return n>=t.hardLimitPercent?(i="hard",o=!0,a="You have significantly exceeded your event limit. New events are being blocked. Please upgrade your plan."):n>=t.softLimitPercent&&(i="soft",o=!1,a=`You've used ${Math.round(n)}% of your monthly event limit. Consider upgrading to avoid interruptions.`),{isThrottled:o,throttleLevel:i,currentUsage:e,limit:t.monthlyEventLimit,percentUsed:n,remainingEvents:r,message:a}}async function r(e,t,a=1){let i=new Date;i.setHours(0,0,0,0);let o=await u(e),l=await s(e),c=n(l,o);if("hard"===c.throttleLevel)return await m(e,"throttle_applied",a,{eventType:t,throttleLevel:"hard",currentUsage:l,limit:o.monthlyEventLimit}),await p(e,i,a),{success:!1,throttled:!0,throttleStatus:c,error:c.message};await d(e,i,t,a),await m(e,"event_ingested",a,{eventType:t,dailyTotal:l+a});let E=l+a,g=n(E,o);return"soft"===g.throttleLevel&&"none"===c.throttleLevel&&(await m(e,"limit_exceeded",1,{level:"soft",usage:E,limit:o.monthlyEventLimit,percentUsed:g.percentUsed}),await h(e,i)),{success:!0,throttled:"none"!==g.throttleLevel,throttleStatus:g}}async function i(e,a){let r=a.reduce((e,t)=>e+t.count,0),i=new Date;i.setHours(0,0,0,0);let o=await u(e),l=await s(e),d=n(l,o);if("hard"===d.throttleLevel)return await p(e,i,r),{success:!1,throttled:!0,throttleStatus:d,error:d.message};await t.prisma.$transaction(async t=>{for(let n of a)await c(t,e,i,n.type,n.count)}),await m(e,"event_ingested",r,{batchSize:a.length,eventTypes:a.map(e=>e.type)});let h=n(l+r,o);return{success:!0,throttled:"none"!==h.throttleLevel,throttleStatus:h}}async function o(e){let t=await u(e);return n(await s(e),t)}async function s(e){let a=await t.prisma.subscription.findUnique({where:{organizationId:e},select:{currentPeriodStart:!0,currentPeriodEnd:!0}});if(!a){let a=new Date;a.setDate(1),a.setHours(0,0,0,0);let n=await t.prisma.$queryRaw`
+      SELECT COALESCE(SUM("totalEvents"), 0) as total
+      FROM "DailyUsageCounter"
+      WHERE "organizationId" = ${e}
+        AND "date" >= ${a}
+    `;return Number(n[0]?.total??0)}let n=await t.prisma.$queryRaw`
+    SELECT COALESCE(SUM("totalEvents"), 0) as total
+    FROM "DailyUsageCounter"
+    WHERE "organizationId" = ${e}
+      AND "date" >= ${a.currentPeriodStart}
+      AND "date" <= ${a.currentPeriodEnd}
+  `;return Number(n[0]?.total??0)}async function l(e,a,n){return t.prisma.$queryRaw`
+    SELECT 
+      "date",
+      "pageViews",
+      "conversions",
+      "customEvents",
+      "totalEvents",
+      "apiRequests",
+      "webhookCalls",
+      "activeConnectors",
+      "activeCampaigns",
+      "throttledRequests",
+      "softLimitHit",
+      "hardLimitHit"
+    FROM "DailyUsageCounter"
+    WHERE "organizationId" = ${e}
+      AND "date" >= ${a}
+      AND "date" <= ${n}
+    ORDER BY "date" ASC
+  `}async function u(e){let n=await t.prisma.subscription.findUnique({where:{organizationId:e},select:{plan:!0,monthlyEventLimit:!0}});if(!n)return{monthlyEventLimit:a.PLAN_DEFINITIONS.FREE.limits.monthlyEventLimit,softLimitPercent:80,hardLimitPercent:150};let r=n.plan,i=a.PLAN_DEFINITIONS[r]??a.PLAN_DEFINITIONS.FREE;return{monthlyEventLimit:n.monthlyEventLimit??i.limits.monthlyEventLimit,softLimitPercent:80,hardLimitPercent:150}}async function d(e,a,n,r){let i=E(n);await t.prisma.$executeRaw`
+    INSERT INTO "DailyUsageCounter" ("id", "organizationId", "date", ${t.prisma.$queryRawUnsafe(`"${i}"`)}, "totalEvents", "updatedAt")
+    VALUES (gen_random_uuid()::text, ${e}, ${a}, ${r}, ${r}, NOW())
+    ON CONFLICT ("organizationId", "date")
+    DO UPDATE SET 
+      ${t.prisma.$queryRawUnsafe(`"${i}"`)} = "DailyUsageCounter".${t.prisma.$queryRawUnsafe(`"${i}"`)} + ${r},
+      "totalEvents" = "DailyUsageCounter"."totalEvents" + ${r},
+      "updatedAt" = NOW()
+  `}async function c(e,t,a,n,r){let i=E(n);await e.$executeRaw`
+    INSERT INTO "DailyUsageCounter" ("id", "organizationId", "date", ${e.$queryRawUnsafe(`"${i}"`)}, "totalEvents", "updatedAt")
+    VALUES (gen_random_uuid()::text, ${t}, ${a}, ${r}, ${r}, NOW())
+    ON CONFLICT ("organizationId", "date")
+    DO UPDATE SET 
+      ${e.$queryRawUnsafe(`"${i}"`)} = "DailyUsageCounter".${e.$queryRawUnsafe(`"${i}"`)} + ${r},
+      "totalEvents" = "DailyUsageCounter"."totalEvents" + ${r},
+      "updatedAt" = NOW()
+  `}async function p(e,a,n){await t.prisma.$executeRaw`
+    INSERT INTO "DailyUsageCounter" ("id", "organizationId", "date", "throttledRequests", "hardLimitHit", "updatedAt")
+    VALUES (gen_random_uuid()::text, ${e}, ${a}, ${n}, true, NOW())
+    ON CONFLICT ("organizationId", "date")
+    DO UPDATE SET 
+      "throttledRequests" = "DailyUsageCounter"."throttledRequests" + ${n},
+      "hardLimitHit" = true,
+      "updatedAt" = NOW()
+  `}async function h(e,a){await t.prisma.$executeRaw`
+    UPDATE "DailyUsageCounter"
+    SET "softLimitHit" = true, "updatedAt" = NOW()
+    WHERE "organizationId" = ${e} AND "date" = ${a}
+  `}async function m(e,a,n,r){await t.prisma.$executeRaw`
+    INSERT INTO "MeteringAuditLog" ("id", "organizationId", "eventType", "eventCount", "metadata", "timestamp")
+    VALUES (gen_random_uuid()::text, ${e}, ${a}, ${n}, ${JSON.stringify(r??{})}::jsonb, NOW())
+  `}function E(e){switch(e){case"page_view":return"pageViews";case"conversion":return"conversions";case"custom_event":default:return"customEvents";case"api_request":return"apiRequests";case"webhook_call":return"webhookCalls"}}e.s(["getDailyUsage",()=>l,"getOrganizationLimits",()=>u,"getPeriodEventCount",()=>s,"getThrottleStatus",()=>o,"recordBatchEvents",()=>i,"recordEvent",()=>r],63943),e.s([],67085)},26135,e=>{"use strict";var t=e.i(56884),a=e.i(42064),n=e.i(1824),r=e.i(99326),i=e.i(18794),o=e.i(83629),s=e.i(41446),l=e.i(61251),u=e.i(5708),d=e.i(59092),c=e.i(99563),p=e.i(39870),h=e.i(8016),m=e.i(7624),E=e.i(70065),g=e.i(36141),v=e.i(93695);e.i(58762);var R=e.i(24378),w=e.i(70081),y=e.i(68050),f=e.i(16336);e.i(67085);var N=e.i(63943);async function C(e){let t=await (0,y.getServerSession)(f.authOptions),a=t?.user?.activeOrgId;if(!a)return w.NextResponse.json({error:"unauthorized"},{status:401});let n=parseInt(new URL(e.url).searchParams.get("days")??"30",10),[r,i,o]=await Promise.all([(0,N.getThrottleStatus)(a),(0,N.getPeriodEventCount)(a),(0,N.getOrganizationLimits)(a)]),s=new Date,l=new Date;l.setDate(l.getDate()-n);let u=await (0,N.getDailyUsage)(a,l,s);return w.NextResponse.json({throttleStatus:r,periodEventCount:i,limits:o,dailyUsage:u})}e.s(["GET",()=>C],49198);var $=e.i(49198);let O=new t.AppRouteRouteModule({definition:{kind:a.RouteKind.APP_ROUTE,page:"/api/metering/usage/route",pathname:"/api/metering/usage",filename:"route",bundlePath:""},distDir:".next",relativeProjectDir:"",resolvedPagePath:"[project]/OneDrive/Desktop/Optiq/CascadeProjects/windsurf-project/apps/frontend/src/app/api/metering/usage/route.ts",nextConfigOutput:"",userland:$}),{workAsyncStorage:A,workUnitAsyncStorage:T,serverHooks:D}=O;function L(){return(0,n.patchFetch)({workAsyncStorage:A,workUnitAsyncStorage:T})}async function S(e,t,n){O.isDev&&(0,r.addRequestMeta)(e,"devRequestTimingInternalsEnd",process.hrtime.bigint());let w="/api/metering/usage/route";w=w.replace(/\/index$/,"")||"/";let y=await O.prepare(e,t,{srcPage:w,multiZoneDraftMode:!1});if(!y)return t.statusCode=400,t.end("Bad Request"),null==n.waitUntil||n.waitUntil.call(n,Promise.resolve()),null;let{buildId:f,params:N,nextConfig:C,parsedUrl:$,isDraftMode:A,prerenderManifest:T,routerServerContext:D,isOnDemandRevalidate:L,revalidateOnlyGenerated:S,resolvedPathname:I,clientReferenceManifest:U,serverActionsManifest:P}=y,x=(0,l.normalizeAppPath)(w),_=!!(T.dynamicRoutes[x]||T.routes[I]),q=async()=>((null==D?void 0:D.render404)?await D.render404(e,t,$,!1):t.end("This page could not be found"),null);if(_&&!A){let e=!!T.routes[I],t=T.dynamicRoutes[x];if(t&&!1===t.fallback&&!e){if(C.experimental.adapterPath)return await q();throw new v.NoFallbackError}}let b=null;!_||O.isDev||A||(b="/index"===(b=I)?"/":b);let H=!0===O.isDev||!_,M=_&&!H;P&&U&&(0,o.setReferenceManifestsSingleton)({page:w,clientReferenceManifest:U,serverActionsManifest:P,serverModuleMap:(0,s.createServerModuleMap)({serverActionsManifest:P})});let F=e.method||"GET",k=(0,i.getTracer)(),z=k.getActiveScopeSpan(),W={params:N,prerenderManifest:T,renderOpts:{experimental:{authInterrupts:!!C.experimental.authInterrupts},cacheComponents:!!C.cacheComponents,supportsDynamicResponse:H,incrementalCache:(0,r.getRequestMeta)(e,"incrementalCache"),cacheLifeProfiles:C.cacheLife,waitUntil:n.waitUntil,onClose:e=>{t.on("close",e)},onAfterTaskError:void 0,onInstrumentationRequestError:(t,a,n)=>O.onRequestError(e,t,n,D)},sharedContext:{buildId:f}},j=new u.NodeNextRequest(e),V=new u.NodeNextResponse(t),K=d.NextRequestAdapter.fromNodeNextRequest(j,(0,d.signalFromNodeResponse)(t));try{let o=async e=>O.handle(K,W).finally(()=>{if(!e)return;e.setAttributes({"http.status_code":t.statusCode,"next.rsc":!1});let a=k.getRootSpanAttributes();if(!a)return;if(a.get("next.span_type")!==c.BaseServerSpan.handleRequest)return void console.warn(`Unexpected root span type '${a.get("next.span_type")}'. Please report this Next.js issue https://github.com/vercel/next.js`);let n=a.get("next.route");if(n){let t=`${F} ${n}`;e.setAttributes({"next.route":n,"http.route":n,"next.span_name":t}),e.updateName(t)}else e.updateName(`${F} ${w}`)}),s=!!(0,r.getRequestMeta)(e,"minimalMode"),l=async r=>{var i,l;let u=async({previousCacheEntry:a})=>{try{if(!s&&L&&S&&!a)return t.statusCode=404,t.setHeader("x-nextjs-cache","REVALIDATED"),t.end("This page could not be found"),null;let i=await o(r);e.fetchMetrics=W.renderOpts.fetchMetrics;let l=W.renderOpts.pendingWaitUntil;l&&n.waitUntil&&(n.waitUntil(l),l=void 0);let u=W.renderOpts.collectedTags;if(!_)return await (0,h.sendResponse)(j,V,i,W.renderOpts.pendingWaitUntil),null;{let e=await i.blob(),t=(0,m.toNodeOutgoingHttpHeaders)(i.headers);u&&(t[g.NEXT_CACHE_TAGS_HEADER]=u),!t["content-type"]&&e.type&&(t["content-type"]=e.type);let a=void 0!==W.renderOpts.collectedRevalidate&&!(W.renderOpts.collectedRevalidate>=g.INFINITE_CACHE)&&W.renderOpts.collectedRevalidate,n=void 0===W.renderOpts.collectedExpire||W.renderOpts.collectedExpire>=g.INFINITE_CACHE?void 0:W.renderOpts.collectedExpire;return{value:{kind:R.CachedRouteKind.APP_ROUTE,status:i.status,body:Buffer.from(await e.arrayBuffer()),headers:t},cacheControl:{revalidate:a,expire:n}}}}catch(t){throw(null==a?void 0:a.isStale)&&await O.onRequestError(e,t,{routerKind:"App Router",routePath:w,routeType:"route",revalidateReason:(0,p.getRevalidateReason)({isStaticGeneration:M,isOnDemandRevalidate:L})},D),t}},d=await O.handleResponse({req:e,nextConfig:C,cacheKey:b,routeKind:a.RouteKind.APP_ROUTE,isFallback:!1,prerenderManifest:T,isRoutePPREnabled:!1,isOnDemandRevalidate:L,revalidateOnlyGenerated:S,responseGenerator:u,waitUntil:n.waitUntil,isMinimalMode:s});if(!_)return null;if((null==d||null==(i=d.value)?void 0:i.kind)!==R.CachedRouteKind.APP_ROUTE)throw Object.defineProperty(Error(`Invariant: app-route received invalid cache entry ${null==d||null==(l=d.value)?void 0:l.kind}`),"__NEXT_ERROR_CODE",{value:"E701",enumerable:!1,configurable:!0});s||t.setHeader("x-nextjs-cache",L?"REVALIDATED":d.isMiss?"MISS":d.isStale?"STALE":"HIT"),A&&t.setHeader("Cache-Control","private, no-cache, no-store, max-age=0, must-revalidate");let c=(0,m.fromNodeOutgoingHttpHeaders)(d.value.headers);return s&&_||c.delete(g.NEXT_CACHE_TAGS_HEADER),!d.cacheControl||t.getHeader("Cache-Control")||c.get("Cache-Control")||c.set("Cache-Control",(0,E.getCacheControlHeader)(d.cacheControl)),await (0,h.sendResponse)(j,V,new Response(d.value.body,{headers:c,status:d.value.status||200})),null};z?await l(z):await k.withPropagatedContext(e.headers,()=>k.trace(c.BaseServerSpan.handleRequest,{spanName:`${F} ${w}`,kind:i.SpanKind.SERVER,attributes:{"http.method":F,"http.target":e.url}},l))}catch(t){if(t instanceof v.NoFallbackError||await O.onRequestError(e,t,{routerKind:"App Router",routePath:x,routeType:"route",revalidateReason:(0,p.getRevalidateReason)({isStaticGeneration:M,isOnDemandRevalidate:L})}),_)throw t;return await (0,h.sendResponse)(j,V,new Response(null,{status:500})),null}}e.s(["handler",()=>S,"patchFetch",()=>L,"routeModule",()=>O,"serverHooks",()=>D,"workAsyncStorage",()=>A,"workUnitAsyncStorage",()=>T],26135)}];
+
+//# sourceMappingURL=OneDrive_Desktop_Optiq_CascadeProjects_windsurf-project_f65d7ac9._.js.map

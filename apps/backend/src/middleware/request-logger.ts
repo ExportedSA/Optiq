@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { createLogger } from "@optiq/shared";
+import { createLogger } from "@optiq/shared/logger";
 import {
   createRequestContext,
   extractTraceId,

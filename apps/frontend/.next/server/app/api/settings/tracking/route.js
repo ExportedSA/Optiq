@@ -1,11 +1,12 @@
 var R=require("../../../../chunks/[turbopack]_runtime.js")("server/app/api/settings/tracking/route.js")
-R.c("server/chunks/[root-of-the-server]__392e7b7a._.js")
+R.c("server/chunks/c9d07_next_dist_esm_build_templates_app-route_42ee5bcc.js")
+R.c("server/chunks/[root-of-the-server]__fe97d0d6._.js")
+R.c("server/chunks/c9d07_next_dist_a43554ac._.js")
 R.c("server/chunks/c9d07_next_ba6f97dc._.js")
-R.c("server/chunks/c9d07_next_dist_d02e432d._.js")
 R.c("server/chunks/[root-of-the-server]__93b885f5._.js")
 R.c("server/chunks/OneDrive_Desktop_Optiq_CascadeProjects_windsurf-project_c2af6329._.js")
+R.c("server/chunks/c9d07_@opentelemetry_api_build_esm_19dbe391._.js")
 R.c("server/chunks/c9d07_zod_v4_classic_external_0506f14c.js")
-R.c("server/chunks/OneDrive_Desktop_Optiq_CascadeProjects_windsurf-project_4c18b555._.js")
 R.c("server/chunks/31318_frontend__next-internal_server_app_api_settings_tracking_route_actions_9f5ead46.js")
-R.m(90205)
-module.exports=R.m(90205).exports
+R.m(64816)
+module.exports=R.m(64816).exports

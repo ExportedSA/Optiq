@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { randomUUID } from "node:crypto";
 
-import { createLogger } from "@optiq/shared";
+import { createLogger } from "@optiq/shared/logger";
 
 /**
  * Register logging middleware with correlation IDs
@@ -10,7 +10,7 @@ export async function registerLoggingMiddleware(app: FastifyInstance) {
   const logger = createLogger({ name: "optiq-backend" });
 
   // Replace Fastify's default logger with our Pino logger
-  app.log = logger;
+  app.log = logger as any;
 
   // Add request ID hook (correlation ID)
   app.addHook("onRequest", async (request, reply) => {
@@ -31,7 +31,7 @@ export async function registerLoggingMiddleware(app: FastifyInstance) {
       requestId,
       method: request.method,
       url: request.url,
-    });
+    }) as any;
   });
 
   // Log request start

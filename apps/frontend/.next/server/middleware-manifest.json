@@ -1,0 +1,33 @@
+{
+  "version": 3,
+  "middleware": {
+    "/": {
+      "files": [
+        "server/edge/chunks/b1735_Optiq_CascadeProjects_windsurf-project_apps_frontend_edge-wrapper_fc47bd93.js",
+        "server/edge/chunks/[root-of-the-server]__cc8c55ca._.js",
+        "server/edge/chunks/968a2_Optiq_CascadeProjects_windsurf-project_apps_frontend_edge-wrapper_0d80a64b.js"
+      ],
+      "name": "middleware",
+      "page": "/",
+      "matchers": [
+        {
+          "regexp": "^(?:\\/(_next\\/data\\/[^/]{1,}))?\\/app(?:\\/((?:[^\\/#\\?]+?)(?:\\/(?:[^\\/#\\?]+?))*))?(\\\\.json)?[\\/#\\?]?$",
+          "originalSource": "/app/:path*"
+        }
+      ],
+      "wasm": [],
+      "assets": [],
+      "env": {
+        "__NEXT_BUILD_ID": "ELHFVeOdnzdF-0mRZ69ul",
+        "NEXT_SERVER_ACTIONS_ENCRYPTION_KEY": "6wS1Y+265rIe/4oKiESxkpjn1BAiZTpRc2qmoegyuHY=",
+        "__NEXT_PREVIEW_MODE_ID": "fab22cc70ec0283703654692395370fd",
+        "__NEXT_PREVIEW_MODE_ENCRYPTION_KEY": "af1fe2aabb29575213b98c62ddd522b2c86e8eec3c8bcf41d7f7bcbd3ad96cf3",
+        "__NEXT_PREVIEW_MODE_SIGNING_KEY": "72295aec71bc9df984c379c8bf8487974e57e595cea7dbc8cc6766b8bdaa6cd9"
+      }
+    }
+  },
+  "sortedMiddleware": [
+    "/"
+  ],
+  "functions": {}
+}

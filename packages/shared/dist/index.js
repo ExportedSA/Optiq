@@ -1,6 +1,6 @@
 export * from "./types";
 export * from "./utils";
-export * from "./logger";
+export * from "./logger-web";
 export * from "./normalization";
 export * from "./pricing";
 export * from "./middleware";
