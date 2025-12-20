@@ -1,7 +1,7 @@
 /**
  * TouchPoint Derivation Cron Job
  * 
- * Schedule: 0 */6 * * * (every 6 hours)
+ * Schedule: every 6 hours (0 0,6,12,18 * * *)
  * Derives TouchPoint records from TrackingEvent PAGE_VIEW events
  */
 
