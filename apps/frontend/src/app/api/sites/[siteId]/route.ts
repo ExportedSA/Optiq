@@ -28,7 +28,7 @@ const updateSiteSchema = z.object({
  */
 export async function GET(
   request: Request,
-  { params }: { params: { siteId: string } }
+  { params }: { params: Promise<{ siteId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -41,10 +41,12 @@ export async function GET(
       return NextResponse.json({ error: "No active organization" }, { status: 400 });
     }
 
+    const { siteId } = await params;
+
     // Get site and verify ownership
     const site = await prisma.trackingSite.findFirst({
       where: {
-        id: params.siteId,
+        id: siteId,
         organizationId,
       },
       select: {
@@ -101,7 +103,7 @@ export async function GET(
  */
 export async function PATCH(
   request: Request,
-  { params }: { params: { siteId: string } }
+  { params }: { params: Promise<{ siteId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -113,6 +115,8 @@ export async function PATCH(
     if (!organizationId) {
       return NextResponse.json({ error: "No active organization" }, { status: 400 });
     }
+
+    const { siteId } = await params;
 
     // RBAC: Check permissions
     const membership = await prisma.membership.findUnique({
@@ -134,7 +138,7 @@ export async function PATCH(
     // Verify site exists and belongs to organization
     const existingSite = await prisma.trackingSite.findFirst({
       where: {
-        id: params.siteId,
+        id: siteId,
         organizationId,
       },
     });
@@ -156,7 +160,7 @@ export async function PATCH(
 
     // Update site
     const updatedSite = await prisma.trackingSite.update({
-      where: { id: params.siteId },
+      where: { id: siteId },
       data: validation.data,
       select: {
         id: true,
@@ -183,7 +187,7 @@ export async function PATCH(
  */
 export async function DELETE(
   request: Request,
-  { params }: { params: { siteId: string } }
+  { params }: { params: Promise<{ siteId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -195,6 +199,8 @@ export async function DELETE(
     if (!organizationId) {
       return NextResponse.json({ error: "No active organization" }, { status: 400 });
     }
+
+    const { siteId } = await params;
 
     // RBAC: Only OWNER can delete sites
     const membership = await prisma.membership.findUnique({
@@ -216,7 +222,7 @@ export async function DELETE(
     // Verify site exists and belongs to organization
     const site = await prisma.trackingSite.findFirst({
       where: {
-        id: params.siteId,
+        id: siteId,
         organizationId,
       },
     });
@@ -227,7 +233,7 @@ export async function DELETE(
 
     // Delete site (cascade will delete related events and touchpoints)
     await prisma.trackingSite.delete({
-      where: { id: params.siteId },
+      where: { id: siteId },
     });
 
     return NextResponse.json({

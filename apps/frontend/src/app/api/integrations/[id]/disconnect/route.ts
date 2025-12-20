@@ -19,7 +19,7 @@ export const runtime = "nodejs";
  */
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const logger = appLogger.child({ integration: "disconnect" });
 
@@ -41,7 +41,7 @@ export async function DELETE(
       );
     }
 
-    const connectionId = params.id;
+    const { id: connectionId } = await params;
 
     // Verify connection belongs to organization
     const connection = await prisma.integrationConnection.findFirst({
