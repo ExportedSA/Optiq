@@ -44,7 +44,6 @@ export async function GET(req: Request) {
   );
 
   if (result.skipped) {
-    appLogger.info("TouchPoint derivation cron job skipped (already running)");
     return NextResponse.json({
       success: true,
       skipped: true,
@@ -53,15 +52,20 @@ export async function GET(req: Request) {
     });
   }
 
+  if (result.error) {
+    return NextResponse.json(
+      { success: false, error: result.error.message },
+      { status: 500 }
+    );
+  }
+
   if (!result.executed || !result.result) {
-    appLogger.error("TouchPoint derivation cron job failed");
     return NextResponse.json(
       { success: false, error: "Job execution failed" },
       { status: 500 }
     );
   }
 
-  appLogger.info("TouchPoint derivation cron job completed");
   return NextResponse.json({
     success: true,
     skipped: false,

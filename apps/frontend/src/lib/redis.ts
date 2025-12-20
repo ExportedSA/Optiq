@@ -6,6 +6,7 @@
 
 import { Redis } from "@upstash/redis";
 import { appLogger } from "@/lib/observability";
+import { captureException } from "@/lib/observability/sentry";
 
 let redis: Redis | null = null;
 
@@ -185,16 +186,53 @@ export async function withJobLock<T>(
   jobName: string,
   fn: () => Promise<T>,
   options: LockOptions = {}
-): Promise<{ executed: boolean; result?: T; skipped?: boolean }> {
+): Promise<{ executed: boolean; result?: T; skipped?: boolean; error?: Error }> {
+  const startTime = Date.now();
   const lock = await acquireJobLock(jobName, options);
 
   if (!lock.acquired) {
+    appLogger.info("Job execution skipped - lock already held", { 
+      job: jobName,
+      duration: Date.now() - startTime 
+    });
     return { executed: false, skipped: true };
   }
 
   try {
+    appLogger.info("Job execution started", { job: jobName, lockId: lock.lockId });
     const result = await fn();
+    const duration = Date.now() - startTime;
+    
+    appLogger.info("Job execution completed successfully", { 
+      job: jobName, 
+      lockId: lock.lockId,
+      duration 
+    });
+    
     return { executed: true, result };
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    const err = error instanceof Error ? error : new Error(String(error));
+    
+    appLogger.error("Job execution failed", err, { 
+      job: jobName, 
+      lockId: lock.lockId,
+      duration 
+    });
+    
+    // Capture error in Sentry with job context
+    captureException(err, {
+      tags: {
+        job: jobName,
+        component: "cron",
+      },
+      extra: {
+        lockId: lock.lockId,
+        duration,
+      },
+    });
+    
+    return { executed: true, error: err };
   } finally {
     if (lock.lockId) {
       await releaseJobLock(jobName, lock.lockId);

@@ -81,7 +81,6 @@ export async function GET(request: Request) {
   );
 
   if (result.skipped) {
-    appLogger.info("Daily rollups cron job skipped (already running)");
     return NextResponse.json({
       success: true,
       skipped: true,
@@ -89,8 +88,14 @@ export async function GET(request: Request) {
     });
   }
 
+  if (result.error) {
+    return NextResponse.json(
+      { success: false, error: result.error.message },
+      { status: 500 }
+    );
+  }
+
   if (!result.executed || !result.result) {
-    appLogger.error("Daily rollups cron job failed");
     return NextResponse.json(
       { success: false, error: "Job execution failed" },
       { status: 500 }
