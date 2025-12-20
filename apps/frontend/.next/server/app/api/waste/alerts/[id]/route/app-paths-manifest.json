@@ -1,0 +1,3 @@
+{
+  "/api/waste/alerts/[id]/route": "app/api/waste/alerts/[id]/route.js"
+}

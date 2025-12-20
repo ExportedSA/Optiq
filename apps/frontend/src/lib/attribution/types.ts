@@ -1,11 +1,8 @@
 import "server-only";
+import type { AttributionModel as PrismaAttributionModel } from "@prisma/client";
 
-export type AttributionModel =
-  | "FIRST_TOUCH"
-  | "LAST_TOUCH"
-  | "LINEAR"
-  | "TIME_DECAY"
-  | "POSITION_BASED";
+// Re-export Prisma's AttributionModel enum
+export type AttributionModel = PrismaAttributionModel;
 
 export type TouchPointData = {
   id: string;

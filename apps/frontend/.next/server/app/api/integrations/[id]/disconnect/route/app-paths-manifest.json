@@ -1,0 +1,3 @@
+{
+  "/api/integrations/[id]/disconnect/route": "app/api/integrations/[id]/disconnect/route.js"
+}

@@ -4,8 +4,8 @@
  * Simple cron-like scheduler for background jobs
  * In production, consider using a proper job queue like BullMQ or Agenda
  */
-import { runJourneyBuilderJob } from "./journey-builder";
 import { createLogger } from "@optiq/shared";
+import { runAlertsEngineJob } from "./alerts-engine";
 const logger = createLogger({ name: "job-scheduler" });
 /**
  * Parse simple cron schedule
@@ -77,10 +77,10 @@ function shouldRunNow(schedule, lastRun) {
  */
 const jobs = [
     {
-        name: "journey-builder",
-        schedule: process.env.JOURNEY_BUILDER_SCHEDULE || "0 * * * *", // Every hour by default
-        handler: runJourneyBuilderJob,
-        enabled: process.env.JOURNEY_BUILDER_ENABLED !== "false",
+        name: "alerts-engine",
+        schedule: process.env.ALERTS_ENGINE_SCHEDULE || "0 4 * * *", // daily 4am by default
+        handler: () => runAlertsEngineJob(),
+        enabled: process.env.ALERTS_ENGINE_ENABLED === "true",
     },
 ];
 /**

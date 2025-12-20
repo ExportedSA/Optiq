@@ -1,0 +1,3 @@
+{
+  "/api/cron/touchpoint-derivation/route": "app/api/cron/touchpoint-derivation/route.js"
+}

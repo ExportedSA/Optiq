@@ -307,7 +307,7 @@ async function evaluateCpaRule(
   const rollups = await prisma.dailyRollup.findMany({
     where: {
       organizationId,
-      grain: "campaign",
+      grain: "CAMPAIGN",
       date: { gte: startDate, lte: endDate },
       conversions: { gt: 0 },
     },
@@ -389,7 +389,7 @@ async function evaluateRoasRule(
   const rollups = await prisma.dailyRollup.findMany({
     where: {
       organizationId,
-      grain: "campaign",
+      grain: "CAMPAIGN",
       date: { gte: startDate, lte: endDate },
       spendMicros: { gt: 0 },
     },
@@ -469,7 +469,7 @@ async function evaluateSpendRule(
   const rollups = await prisma.dailyRollup.findMany({
     where: {
       organizationId,
-      grain: "campaign",
+      grain: "CAMPAIGN",
       date: { gte: startDate, lte: endDate },
       conversions: 0,
     },
@@ -542,7 +542,7 @@ async function evaluateConversionDropRule(
   const currentRollups = await prisma.dailyRollup.findMany({
     where: {
       organizationId,
-      grain: "organization",
+      grain: "ORGANIZATION",
       date: { gte: currentStart, lte: endDate },
     },
   });
@@ -551,7 +551,7 @@ async function evaluateConversionDropRule(
   const previousRollups = await prisma.dailyRollup.findMany({
     where: {
       organizationId,
-      grain: "organization",
+      grain: "ORGANIZATION",
       date: { gte: previousStart, lt: currentStart },
     },
   });

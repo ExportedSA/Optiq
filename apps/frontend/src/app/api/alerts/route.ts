@@ -8,12 +8,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { 
-  getAlertInbox, 
-  acknowledgeAlert, 
-  resolveAlert, 
-  dismissAlert 
-} from "@/lib/jobs/alerts-engine";
+import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
@@ -113,15 +108,52 @@ export async function PATCH(request: Request) {
 
     const userId = session.user.id;
 
+    // Verify alert belongs to organization
+    const alert = await prisma.alertEvent.findFirst({
+      where: {
+        id: alertId,
+        organizationId,
+      },
+    });
+
+    if (!alert) {
+      return NextResponse.json(
+        { error: "Alert not found" },
+        { status: 404 }
+      );
+    }
+
+    // Update alert based on action
     switch (action) {
       case "acknowledge":
-        await acknowledgeAlert({ alertId, userId });
+        await prisma.alertEvent.update({
+          where: { id: alertId },
+          data: {
+            status: "ACKNOWLEDGED",
+            acknowledgedAt: new Date(),
+            acknowledgedBy: userId,
+          },
+        });
         break;
       case "resolve":
-        await resolveAlert({ alertId, userId });
+        await prisma.alertEvent.update({
+          where: { id: alertId },
+          data: {
+            status: "RESOLVED",
+            resolvedAt: new Date(),
+            resolvedBy: userId,
+          },
+        });
         break;
       case "dismiss":
-        await dismissAlert({ alertId, userId });
+        await prisma.alertEvent.update({
+          where: { id: alertId },
+          data: {
+            status: "DISMISSED",
+            dismissedAt: new Date(),
+            dismissedBy: userId,
+          },
+        });
         break;
       default:
         return NextResponse.json(

@@ -362,7 +362,7 @@ async function createOrganizationRollup(
     SELECT id FROM "DailyRollup"
     WHERE "organizationId" = ${organizationId}
       AND "date" = ${date}
-      AND "grain" = 'organization'
+      AND "grain" = 'ORGANIZATION'
       AND "platformId" IS NULL
       AND "campaignId" IS NULL
       AND "attributionModel" = ${attributionModel}
@@ -398,7 +398,7 @@ async function createOrganizationRollup(
       "attributedConversions", "cpa", "roas", "ctr", "cpc",
       "wasteSpendMicros", "wastePct", "attributionModel", "createdAt", "updatedAt"
     ) VALUES (
-      gen_random_uuid()::text, ${organizationId}, ${date}, 'organization', NULL, NULL,
+      gen_random_uuid()::text, ${organizationId}, ${date}, 'ORGANIZATION', NULL, NULL,
       ${impressions}, ${clicks}, ${spendMicros}, ${conversions}, ${conversionValue},
       ${conversions}, ${metrics.cpa}, ${metrics.roas}, ${metrics.ctr}, ${metrics.cpc},
       ${metrics.wasteSpendMicros}, ${metrics.wastePct}, ${attributionModel}, NOW(), NOW()
@@ -431,7 +431,7 @@ async function createPlatformRollup(
     SELECT id FROM "DailyRollup"
     WHERE "organizationId" = ${organizationId}
       AND "date" = ${date}
-      AND "grain" = 'platform'
+      AND "grain" = 'PLATFORM'
       AND "platformId" = ${platformId}
       AND "campaignId" IS NULL
       AND "attributionModel" = ${attributionModel}
@@ -467,7 +467,7 @@ async function createPlatformRollup(
       "attributedConversions", "cpa", "roas", "ctr", "cpc",
       "wasteSpendMicros", "wastePct", "attributionModel", "createdAt", "updatedAt"
     ) VALUES (
-      gen_random_uuid()::text, ${organizationId}, ${date}, 'platform', ${platformId}, NULL,
+      gen_random_uuid()::text, ${organizationId}, ${date}, 'PLATFORM', ${platformId}, NULL,
       ${impressions}, ${clicks}, ${spendMicros}, ${conversions}, ${conversionValue},
       ${conversions}, ${metrics.cpa}, ${metrics.roas}, ${metrics.ctr}, ${metrics.cpc},
       ${metrics.wasteSpendMicros}, ${metrics.wastePct}, ${attributionModel}, NOW(), NOW()
@@ -501,7 +501,7 @@ async function createCampaignRollup(
     SELECT id FROM "DailyRollup"
     WHERE "organizationId" = ${organizationId}
       AND "date" = ${date}
-      AND "grain" = 'campaign'
+      AND "grain" = 'CAMPAIGN'
       AND "campaignId" = ${campaignId}
       AND "attributionModel" = ${attributionModel}
     LIMIT 1
@@ -536,7 +536,7 @@ async function createCampaignRollup(
       "attributedConversions", "cpa", "roas", "ctr", "cpc",
       "wasteSpendMicros", "wastePct", "attributionModel", "createdAt", "updatedAt"
     ) VALUES (
-      gen_random_uuid()::text, ${organizationId}, ${date}, 'campaign', ${platformId}, ${campaignId},
+      gen_random_uuid()::text, ${organizationId}, ${date}, 'CAMPAIGN', ${platformId}, ${campaignId},
       ${impressions}, ${clicks}, ${spendMicros}, ${conversions}, ${conversionValue},
       ${conversions}, ${metrics.cpa}, ${metrics.roas}, ${metrics.ctr}, ${metrics.cpc},
       ${metrics.wasteSpendMicros}, ${metrics.wastePct}, ${attributionModel}, NOW(), NOW()

@@ -66,7 +66,7 @@ async function getDashboardKpisFromRollups(
   const currentRollups = await prisma.dailyRollup.findMany({
     where: {
       organizationId,
-      grain: "organization",
+      grain: "ORGANIZATION",
       date: { gte: startDate, lte: endDate },
     },
   });
@@ -87,7 +87,7 @@ async function getDashboardKpisFromRollups(
   const previousRollups = await prisma.dailyRollup.findMany({
     where: {
       organizationId,
-      grain: "organization",
+      grain: "ORGANIZATION",
       date: { gte: prevStartDate, lte: prevEndDate },
     },
   });

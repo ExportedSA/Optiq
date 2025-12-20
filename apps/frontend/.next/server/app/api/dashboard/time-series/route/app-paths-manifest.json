@@ -1,0 +1,3 @@
+{
+  "/api/dashboard/time-series/route": "app/api/dashboard/time-series/route.js"
+}

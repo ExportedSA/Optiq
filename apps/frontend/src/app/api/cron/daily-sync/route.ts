@@ -28,12 +28,14 @@ export async function GET(req: Request) {
   const result = await withJobLock(
     JOB_NAME,
     async () => {
-      const { runDailySync } = await import("@/lib/jobs/daily-sync");
+      const { runDailySync } = await import("@/lib/jobs/run-daily-sync");
       const syncResult = await runDailySync();
       appLogger.info("Daily sync job executed", {
-        successfulSyncs: syncResult.successfulSyncs,
-        failedSyncs: syncResult.failedSyncs,
-        totalConnections: syncResult.totalConnections,
+        organizationsProcessed: syncResult.organizationsProcessed,
+        connectionsProcessed: syncResult.connectionsProcessed,
+        costFactsCreated: syncResult.costFactsCreated,
+        costFactsUpdated: syncResult.costFactsUpdated,
+        errors: syncResult.errors,
       });
       return syncResult;
     },

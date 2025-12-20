@@ -31,37 +31,37 @@ export declare function resolveIdentity(organizationId: string, siteId: string, 
 export declare function getIdentityByKey(identityKey: string): Promise<({
     aliases: {
         id: string;
+        createdAt: Date;
         firstSeenAt: Date;
         lastSeenAt: Date;
-        createdAt: Date;
         identityId: string;
         aliasType: string;
         aliasValue: string;
     }[];
 } & {
     id: string;
-    identityKey: string;
+    createdAt: Date;
+    updatedAt: Date;
     organizationId: string;
+    externalId: string | null;
     siteId: string;
+    eventCount: number;
     anonymousId: string | null;
-    deviceId: string | null;
     emailHash: string | null;
     phoneHash: string | null;
     customerId: string | null;
-    externalId: string | null;
+    identityKey: string;
+    deviceId: string | null;
     firstSeenAt: Date;
     lastSeenAt: Date;
-    eventCount: number;
-    createdAt: Date;
-    updatedAt: Date;
 }) | null>;
 /**
  * Get identity merge history
  */
 export declare function getIdentityMergeHistory(identityId: string): Promise<{
     id: string;
-    organizationId: string;
     createdAt: Date;
+    organizationId: string;
     sourceIdentityId: string;
     targetIdentityId: string;
     mergeReason: string;

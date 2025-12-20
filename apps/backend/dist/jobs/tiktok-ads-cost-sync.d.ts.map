@@ -1,0 +1,1 @@
+{"version":3,"file":"tiktok-ads-cost-sync.d.ts","sourceRoot":"","sources":["../../src/jobs/tiktok-ads-cost-sync.ts"],"names":[],"mappings":"AAkBA,wBAAsB,uBAAuB,CAAC,MAAM,CAAC,EAAE;IACrD,cAAc,CAAC,EAAE,MAAM,CAAC;IACxB,YAAY,CAAC,EAAE,MAAM,CAAC;IACtB,QAAQ,CAAC,EAAE,OAAO,CAAC;IACnB,SAAS,CAAC,EAAE,IAAI,CAAC;IACjB,OAAO,CAAC,EAAE,IAAI,CAAC;CAChB,GAAG,OAAO,CAAC,IAAI,CAAC,CAgNhB"}

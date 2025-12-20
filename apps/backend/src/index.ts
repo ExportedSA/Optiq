@@ -6,9 +6,6 @@ import { pool } from "./db/pool";
 import { registerTrackRoutes } from "./api/routes/track";
 import { registerEventRoutes } from "./api/routes/events";
 import { registerConversionRoutes } from "./api/routes/conversions";
-import { registerGoogleAdsOAuthRoutes } from "./api/routes/google-ads-oauth";
-import { registerMetaAdsOAuthRoutes } from "./api/routes/meta-ads-oauth";
-import { registerTikTokAdsOAuthRoutes } from "./api/routes/tiktok-ads-oauth";
 import { registerLoggingMiddleware } from "./middleware/logging";
 import { registerRateLimitMiddleware } from "./middleware/rate-limit";
 import { startScheduler } from "./jobs/scheduler";
@@ -39,9 +36,6 @@ app.get("/health", async (request) => {
 await registerTrackRoutes(app);
 await registerEventRoutes(app);
 await registerConversionRoutes(app);
-await registerGoogleAdsOAuthRoutes(app);
-await registerMetaAdsOAuthRoutes(app);
-await registerTikTokAdsOAuthRoutes(app);
 
 // Start server
 await app.listen({

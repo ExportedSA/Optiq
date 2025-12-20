@@ -1,0 +1,11 @@
+var R=require("../../../../../chunks/[turbopack]_runtime.js")("server/app/api/integrations/google-ads/connect/route.js")
+R.c("server/chunks/[root-of-the-server]__c466a280._.js")
+R.c("server/chunks/c9d07_next_ba6f97dc._.js")
+R.c("server/chunks/c9d07_next_dist_d02e432d._.js")
+R.c("server/chunks/[root-of-the-server]__93b885f5._.js")
+R.c("server/chunks/OneDrive_Desktop_Optiq_CascadeProjects_windsurf-project_c2af6329._.js")
+R.c("server/chunks/c9d07_zod_v4_classic_external_0506f14c.js")
+R.c("server/chunks/OneDrive_Desktop_Optiq_CascadeProjects_windsurf-project_4c18b555._.js")
+R.c("server/chunks/61397_server_app_api_integrations_google-ads_connect_route_actions_96542843.js")
+R.m(88892)
+module.exports=R.m(88892).exports

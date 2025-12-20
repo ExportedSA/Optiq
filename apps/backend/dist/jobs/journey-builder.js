@@ -36,14 +36,53 @@ export async function buildJourneyForConversion(conversion, config = getJourneyC
     // Extract journey metadata
     const firstTouchpoint = touchpoints[0];
     const lastTouchpoint = touchpoints[touchpoints.length - 1];
-    // Create or update journey
-    const journey = await prisma.journey.upsert({
+    // Find existing journey
+    const existingJourney = await prisma.journey.findFirst({
         where: {
-            organizationId_anonId_sessionId: {
+            organizationId: site.organizationId,
+            anonId: conversion.anonId,
+            sessionId: conversion.sessionId,
+        },
+    });
+    // Create or update journey
+    const journey = existingJourney
+        ? await prisma.journey.update({
+            where: { id: existingJourney.id },
+            data: {
+                status: "CONVERTED",
+                convertedAt: conversion.occurredAt,
+                lastActivityAt: conversion.occurredAt,
+                conversionValue: conversion.valueMicros,
+                conversionName: conversion.name,
+                touchPointCount: touchpoints.length,
+                eventCount: touchpoints.length + 1,
+            },
+        })
+        : await prisma.journey.create({
+            data: {
                 organizationId: site.organizationId,
                 anonId: conversion.anonId,
                 sessionId: conversion.sessionId,
+                status: "CONVERTED",
+                startedAt: firstTouchpoint.occurredAt,
+                convertedAt: conversion.occurredAt,
+                lastActivityAt: conversion.occurredAt,
+                conversionValue: conversion.valueMicros,
+                conversionName: conversion.name,
+                firstUtmSource: firstTouchpoint.utmSource,
+                firstUtmMedium: firstTouchpoint.utmMedium,
+                firstUtmCampaign: firstTouchpoint.utmCampaign,
+                lastUtmSource: lastTouchpoint.utmSource,
+                lastUtmMedium: lastTouchpoint.utmMedium,
+                lastUtmCampaign: lastTouchpoint.utmCampaign,
+                touchPointCount: touchpoints.length,
+                eventCount: touchpoints.length + 1,
             },
+        });
+    // Remove the old upsert code
+    const journey_old = await prisma.journey.upsert({
+        where: {
+            id: "dummy",
         },
         create: {
             organizationId: site.organizationId,
@@ -301,7 +340,7 @@ export async function runJourneyBuilderJob(config = getJourneyConfig()) {
             : await buildMissingJourneys(undefined, config);
         console.log("Journey builder job completed:");
         console.log(`  Processed: ${result.processed}`);
-        console.log(`  Created/Rebuilt: ${"created" in result ? result.created : result.rebuilt}`);
+        console.log(`  Created/Rebuilt: ${result.created || result.rebuilt}`);
         console.log(`  Skipped: ${result.skipped}`);
         const stats = await getJourneyStats();
         console.log("Journey statistics:");

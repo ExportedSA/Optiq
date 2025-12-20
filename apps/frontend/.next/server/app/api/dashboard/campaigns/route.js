@@ -1,0 +1,11 @@
+var R=require("../../../../chunks/[turbopack]_runtime.js")("server/app/api/dashboard/campaigns/route.js")
+R.c("server/chunks/[root-of-the-server]__ac78cbf8._.js")
+R.c("server/chunks/c9d07_next_ba6f97dc._.js")
+R.c("server/chunks/c9d07_next_dist_d02e432d._.js")
+R.c("server/chunks/[root-of-the-server]__93b885f5._.js")
+R.c("server/chunks/OneDrive_Desktop_Optiq_CascadeProjects_windsurf-project_c2af6329._.js")
+R.c("server/chunks/c9d07_zod_v4_classic_external_0506f14c.js")
+R.c("server/chunks/OneDrive_Desktop_Optiq_CascadeProjects_windsurf-project_4c18b555._.js")
+R.c("server/chunks/0551e__next-internal_server_app_api_dashboard_campaigns_route_actions_7cd237c7.js")
+R.m(61396)
+module.exports=R.m(61396).exports

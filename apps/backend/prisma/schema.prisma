@@ -78,6 +78,14 @@ enum AttributionModel {
   DATA_DRIVEN
 }
 
+enum RollupGrain {
+  ORGANIZATION
+  PLATFORM
+  CAMPAIGN
+  ADSET
+  AD
+}
+
 enum JourneyStatus {
   IN_PROGRESS
   CONVERTED
@@ -232,11 +240,6 @@ model Organization {
   dailyAdMetrics       DailyAdMetric[]
   dailyCampaignMetrics DailyCampaignMetric[]
   dailyAccountMetrics  DailyAdAccountMetric[]
-
-  // Integration Credentials
-  googleAdsCredentials GoogleAdsCredential[]
-  metaAdsCredentials   MetaAdsCredential[]
-  tikTokAdsCredentials TikTokAdsCredential[]
 
   // Tracking & Attribution
   trackingSites TrackingSite[]
@@ -643,7 +646,7 @@ model DailyRollup {
   date           DateTime @db.Date
 
   // Grain: organization, platform, campaign, adset, ad
-  grain          String   @default("organization")
+  grain          RollupGrain   @default(ORGANIZATION)
   platformId     String?
   campaignId     String?
   adsetId        String?
@@ -670,7 +673,7 @@ model DailyRollup {
   wastePct         Float    @default(0)  // Waste percentage
 
   // Attribution model used
-  attributionModel String   @default("LAST_TOUCH")
+  attributionModel AttributionModel   @default(LAST_TOUCH)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -689,58 +692,8 @@ model DailyRollup {
 // ============================================================================
 // INTEGRATION TOKENS (CREDENTIALS)
 // ============================================================================
-
-model GoogleAdsCredential {
-  id                   String    @id @default(cuid())
-  organizationId       String
-  customerId           String
-  refreshTokenEnc      String
-  accessTokenEnc       String?
-  accessTokenExpiresAt DateTime?
-  scope                String
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
-
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  @@unique([organizationId, customerId])
-  @@index([organizationId])
-}
-
-model MetaAdsCredential {
-  id                   String    @id @default(cuid())
-  organizationId       String
-  adAccountId          String
-  userId               String?
-  accessTokenEnc       String
-  accessTokenExpiresAt DateTime?
-  scope                String
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
-
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  @@unique([organizationId, adAccountId])
-  @@index([organizationId])
-}
-
-model TikTokAdsCredential {
-  id                    String    @id @default(cuid())
-  organizationId        String
-  advertiserId          String
-  accessTokenEnc        String
-  refreshTokenEnc       String
-  accessTokenExpiresAt  DateTime?
-  refreshTokenExpiresAt DateTime?
-  scope                 String
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
-
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  @@unique([organizationId, advertiserId])
-  @@index([organizationId])
-}
+// Consolidated credential storage for all platforms
+// Platform-specific metadata goes in the metadata JSON field
 
 model IntegrationConnection {
   id                String                     @id @default(cuid())
@@ -870,11 +823,13 @@ model TouchPoint {
   site             TrackingSite      @relation(fields: [siteId], references: [id], onDelete: Cascade)
   attributionLinks AttributionLink[]
 
+  @@unique([siteId, sessionId, landingUrl])
+  @@unique([siteId, gclid])
+  @@unique([siteId, fbclid])
+  @@unique([siteId, ttclid])
+  @@unique([siteId, clickId])
   @@index([siteId, anonId, occurredAt])
   @@index([siteId, sessionId, occurredAt])
-  @@index([siteId, gclid])
-  @@index([siteId, fbclid])
-  @@index([siteId, ttclid])
   @@index([siteId, utmSource, utmCampaign])
 }
 

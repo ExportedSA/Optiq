@@ -1,0 +1,3 @@
+{
+  "/api/cron/attribution-weights/route": "app/api/cron/attribution-weights/route.js"
+}

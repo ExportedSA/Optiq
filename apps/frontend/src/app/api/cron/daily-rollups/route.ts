@@ -30,37 +30,51 @@ export async function GET(request: Request) {
   const result = await withJobLock(
     JOB_NAME,
     async () => {
-      // First, run attribution for any unattributed conversions
-      const { runAttributionForConversions, buildJourneys, runDailyRollups } = 
-        await import("@/lib/jobs/daily-rollups");
+      // Use new V2 rollup job
+      const { runDailyRollupsV2 } = await import("@/lib/jobs/daily-rollups-v2");
 
-      // Build journeys for recent conversions
-      const journeyResult = await buildJourneys();
-      appLogger.info("Journeys built", { ...journeyResult });
+      // Process yesterday's data
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      yesterday.setHours(0, 0, 0, 0);
 
-      // Run attribution for unattributed conversions
-      const attributionResult = await runAttributionForConversions({
-        models: ["LAST_TOUCH", "LINEAR"],
-      });
-      appLogger.info("Attribution completed", { ...attributionResult });
+      // Run for all attribution models
+      const models: Array<"LAST_TOUCH" | "LINEAR" | "FIRST_TOUCH" | "TIME_DECAY" | "POSITION_BASED"> = [
+        "LAST_TOUCH",
+        "LINEAR",
+        "FIRST_TOUCH",
+        "TIME_DECAY",
+        "POSITION_BASED",
+      ];
 
-      // Generate daily rollups
-      const rollupResult = await runDailyRollups({
-        days: 7,
-        attributionModel: "LAST_TOUCH",
-      });
-      appLogger.info("Daily rollups completed", {
-        daysProcessed: rollupResult.daysProcessed,
-        totalRollups: rollupResult.totalRollups,
-      });
+      const results = [];
+
+      for (const model of models) {
+        const rollupResult = await runDailyRollupsV2({
+          fromDate: yesterday,
+          toDate: yesterday,
+          attributionModel: model,
+        });
+
+        results.push({
+          model,
+          daysProcessed: rollupResult.daysProcessed,
+          rollupsCreated: rollupResult.rollupsCreated,
+          rollupsUpdated: rollupResult.rollupsUpdated,
+        });
+
+        appLogger.info(`Completed ${model} rollups`, {
+          daysProcessed: rollupResult.daysProcessed,
+          rollupsCreated: rollupResult.rollupsCreated,
+          rollupsUpdated: rollupResult.rollupsUpdated,
+        });
+      }
+
+      const totalRollups = results.reduce((sum, r) => sum + r.rollupsCreated + r.rollupsUpdated, 0);
 
       return {
-        journeys: journeyResult,
-        attribution: attributionResult,
-        rollups: {
-          daysProcessed: rollupResult.daysProcessed,
-          totalRollups: rollupResult.totalRollups,
-        },
+        totalRollups,
+        results,
       };
     },
     { ttlSeconds: maxDuration, bufferSeconds: 60 }
