@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { appLogger } from "@/lib/observability";
-import { verifyCronAuth } from "@/lib/cron-auth";
+import { verifyCronAuth } from "@/lib/cron/auth";
 import { withJobLock } from "@/lib/redis";
 
 export const runtime = "nodejs";

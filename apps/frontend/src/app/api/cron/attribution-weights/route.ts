@@ -8,23 +8,25 @@
 import { NextResponse } from "next/server";
 import { runAttribution } from "@/lib/jobs/run-attribution";
 import { appLogger } from "@/lib/observability";
+import { verifyCronAuth } from "@/lib/cron/auth";
 
 export const runtime = "nodejs";
 export const maxDuration = 300; // 5 minutes
+
+const JOB_NAME = "attribution-weights";
 
 /**
  * POST /api/cron/attribution-weights
  * Calculate attribution weights for recent conversions
  */
 export async function POST(request: Request) {
-  const logger = appLogger.child({ cron: "attribution-weights" });
-
-  // Verify cron secret
-  const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    logger.warn("Unauthorized cron request");
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // Verify cron authentication
+  const auth = verifyCronAuth(request, JOB_NAME);
+  if (!auth.authorized) {
+    return auth.response!;
   }
+
+  const logger = appLogger.child({ cron: JOB_NAME });
 
   try {
     logger.info("Starting attribution weights calculation");

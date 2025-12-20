@@ -6,7 +6,7 @@
  */
 
 import { NextResponse } from "next/server";
-import { verifyCronAuth } from "@/lib/cron-auth";
+import { verifyCronAuth } from "@/lib/cron/auth";
 import { withJobLock } from "@/lib/redis";
 import { appLogger } from "@/lib/observability";
 import { runAlertEvaluation } from "@/lib/alerts/alert-evaluator";
