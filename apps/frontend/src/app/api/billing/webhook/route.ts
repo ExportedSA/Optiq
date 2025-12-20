@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
+import { appLogger } from "@/lib/observability";
 
 import {
   constructWebhookEvent,
@@ -13,77 +14,83 @@ import {
 
 export async function POST(req: Request) {
   if (!isStripeConfigured()) {
+    appLogger.warn("Stripe webhook received but Stripe not configured");
     return NextResponse.json({ error: "Stripe not configured" }, { status: 503 });
   }
 
+  // Get raw body for signature verification
   const body = await req.text();
   const headersList = await headers();
   const signature = headersList.get("stripe-signature");
 
   if (!signature) {
+    appLogger.warn("Stripe webhook received without signature header");
     return NextResponse.json({ error: "Missing signature" }, { status: 400 });
   }
 
+  // Verify webhook signature
   let event;
   try {
     event = constructWebhookEvent(body, signature);
   } catch (err) {
-    console.error("Webhook signature verification failed:", err);
+    const errorMessage = err instanceof Error ? err.message : "Unknown error";
+    appLogger.error("Stripe webhook signature verification failed", { error: errorMessage });
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
-  console.log(`Stripe webhook received: ${event.type}`);
+  appLogger.info("Stripe webhook received", { eventType: event.type, eventId: event.id });
 
   try {
     switch (event.type) {
       case "customer.subscription.created": {
         const subscription = event.data.object;
         const result = await handleSubscriptionCreated(subscription);
-        console.log("subscription.created:", result.message);
+        appLogger.info("Subscription created", { subscriptionId: subscription.id, message: result.message });
         break;
       }
 
       case "customer.subscription.updated": {
         const subscription = event.data.object;
         const result = await handleSubscriptionUpdated(subscription);
-        console.log("subscription.updated:", result.message);
+        appLogger.info("Subscription updated", { subscriptionId: subscription.id, message: result.message });
         break;
       }
 
       case "customer.subscription.deleted": {
         const subscription = event.data.object;
         const result = await handleSubscriptionDeleted(subscription);
-        console.log("subscription.deleted:", result.message);
+        appLogger.info("Subscription deleted", { subscriptionId: subscription.id, message: result.message });
         break;
       }
 
       case "invoice.paid": {
         const invoice = event.data.object;
         const result = await handleInvoicePaid(invoice);
-        console.log("invoice.paid:", result.message);
+        appLogger.info("Invoice paid", { invoiceId: invoice.id, message: result.message });
         break;
       }
 
       case "invoice.payment_failed": {
         const invoice = event.data.object;
         const result = await handleInvoicePaymentFailed(invoice);
-        console.log("invoice.payment_failed:", result.message);
+        appLogger.warn("Invoice payment failed", { invoiceId: invoice.id, message: result.message });
         break;
       }
 
       default:
-        console.log(`Unhandled event type: ${event.type}`);
+        appLogger.debug("Unhandled Stripe webhook event type", { eventType: event.type });
     }
 
-    return NextResponse.json({ received: true });
+    return NextResponse.json({ received: true }, { status: 200 });
   } catch (error) {
-    console.error("Webhook handler error:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    appLogger.error("Stripe webhook handler error", { 
+      error: errorMessage, 
+      stack: errorStack,
+      eventType: event.type,
+      eventId: event.id 
+    });
     return NextResponse.json({ error: "Webhook handler failed" }, { status: 500 });
   }
 }
-
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
