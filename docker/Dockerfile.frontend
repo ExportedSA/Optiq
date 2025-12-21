@@ -2,11 +2,18 @@ FROM node:20-alpine
 
 WORKDIR /app
 
+# Copy package files
 COPY package*.json ./
-RUN npm install
 
+# Use npm ci for reproducible builds
+RUN npm ci --only=production
+
+# Copy application code
 COPY . .
+
+# Build Next.js application
+RUN npm run build
 
 EXPOSE 3000
 
-CMD ["npm", "run", "dev"]
+CMD ["npm", "start"]

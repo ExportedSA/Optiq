@@ -44,6 +44,12 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
+      - name: Verify package-lock.json integrity
+        run: |
+          echo "🔍 Verifying package-lock.json is in sync..."
+          npm ci --dry-run
+          echo "✅ package-lock.json verification passed"
+
       - name: Install dependencies
         run: npm ci
 
