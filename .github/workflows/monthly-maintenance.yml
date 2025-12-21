@@ -1,0 +1,164 @@
+name: Monthly Lock File Maintenance
+
+on:
+  schedule:
+    # Run on the 1st of every month at 2 AM UTC
+    - cron: '0 2 1 * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  regenerate-lock-file:
+    name: Regenerate package-lock.json
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Backup current lock file
+        run: |
+          echo "📦 Backing up current package-lock.json..."
+          cp package-lock.json package-lock.json.backup
+
+      - name: Remove lock file
+        run: |
+          echo "🗑️  Removing package-lock.json..."
+          rm package-lock.json
+
+      - name: Regenerate lock file
+        run: |
+          echo "🔄 Regenerating package-lock.json..."
+          npm install
+
+      - name: Verify npm ci works
+        run: |
+          echo "🔍 Verifying npm ci works with new lock file..."
+          npm ci
+
+      - name: Generate Prisma Client
+        run: |
+          echo "🔧 Generating Prisma client..."
+          npm run prisma:generate -w @optiq/backend
+
+      - name: Run tests
+        run: |
+          echo "🧪 Running tests..."
+          npm run test
+
+      - name: Run type check
+        run: |
+          echo "📝 Running type check..."
+          npm run typecheck
+
+      - name: Run build
+        run: |
+          echo "🏗️  Building project..."
+          npm run build
+
+      - name: Check for changes
+        id: check_changes
+        run: |
+          if git diff --quiet package-lock.json; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "✅ No changes needed - lock file is already optimal"
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "📝 Lock file has been updated"
+          fi
+
+      - name: Create Pull Request
+        if: steps.check_changes.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: |
+            chore: monthly package-lock.json regeneration
+            
+            Automated monthly maintenance to prevent lock file corruption.
+            
+            Changes:
+            - Regenerated package-lock.json from scratch
+            - Verified npm ci works
+            - All tests pass
+            - Build succeeds
+            
+            This is part of our monthly maintenance schedule to ensure
+            dependency tree integrity and prevent future lock file issues.
+          branch: maintenance/monthly-lock-file-regeneration
+          delete-branch: true
+          title: 'chore: Monthly package-lock.json Regeneration'
+          body: |
+            ## 🔄 Monthly Lock File Maintenance
+            
+            This PR is automatically created as part of our monthly maintenance schedule.
+            
+            ### What Changed
+            - Regenerated `package-lock.json` from scratch
+            - Resolved any dependency tree inconsistencies
+            
+            ### Verification
+            - ✅ `npm ci` works successfully
+            - ✅ All tests pass
+            - ✅ Type checking passes
+            - ✅ Build succeeds
+            
+            ### Why This Matters
+            Regular lock file regeneration prevents:
+            - Accumulated corruption over time
+            - Dependency resolution conflicts
+            - CI/CD build failures
+            - "Works on my machine" issues
+            
+            ### Review Checklist
+            - [ ] Review the diff in `package-lock.json`
+            - [ ] Verify CI checks pass
+            - [ ] Merge if all checks are green
+            
+            ### Related Documentation
+            - [PACKAGE_LOCK_ISSUES.md](../PACKAGE_LOCK_ISSUES.md)
+            - [DEPENDENCY_UPDATE_PROCESS.md](../DEPENDENCY_UPDATE_PROCESS.md)
+            
+            ---
+            
+            🤖 This PR was automatically created by the monthly maintenance workflow.
+            
+            **Scheduled:** 1st of every month at 2 AM UTC  
+            **Next run:** Check [Actions schedule](../../actions/workflows/monthly-maintenance.yml)
+          labels: |
+            maintenance
+            dependencies
+            automated
+          assignees: |
+            # Add team members who should review
+          reviewers: |
+            # Add required reviewers
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "❌ Monthly maintenance failed!"
+          echo "Please check the workflow logs and fix any issues."
+          echo "See PACKAGE_LOCK_ISSUES.md for troubleshooting."
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Monthly Maintenance Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.check_changes.outputs.changed }}" == "true" ]; then
+            echo "✅ Lock file regenerated successfully" >> $GITHUB_STEP_SUMMARY
+            echo "📝 Pull request created for review" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ Lock file is already optimal" >> $GITHUB_STEP_SUMMARY
+            echo "ℹ️  No changes needed this month" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Next scheduled run:** 1st of next month at 2 AM UTC" >> $GITHUB_STEP_SUMMARY
