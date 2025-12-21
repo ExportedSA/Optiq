@@ -25,7 +25,8 @@
     "test:ci": "npm run test",
     "clean": "npm -ws run clean && rm -rf node_modules",
     "format": "prettier . --write",
-    "prisma:studio": "npm run prisma:studio -w @optiq/backend"
+    "prisma:studio": "npm run prisma:studio -w @optiq/backend",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@eslint/js": "^9.20.0",
@@ -34,6 +35,7 @@
     "concurrently": "^9.1.2",
     "eslint": "^9.20.0",
     "eslint-config-prettier": "^10.1.0",
+    "husky": "^9.1.7",
     "prettier": "^3.6.2",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.41.0"

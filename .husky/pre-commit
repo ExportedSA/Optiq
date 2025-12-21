@@ -1,0 +1,27 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+echo "🔍 Verifying package-lock.json integrity..."
+
+# Check if package-lock.json has been modified
+if git diff --cached --name-only | grep -q "package-lock.json"; then
+  echo "📦 package-lock.json changed - verifying npm ci works..."
+  
+  # Run npm ci in dry-run mode to verify lock file integrity
+  if npm ci --dry-run > /dev/null 2>&1; then
+    echo "✅ npm ci verification passed"
+  else
+    echo "❌ ERROR: npm ci failed - package-lock.json is out of sync"
+    echo ""
+    echo "To fix this issue:"
+    echo "  1. Run: npm install"
+    echo "  2. Add the updated package-lock.json: git add package-lock.json"
+    echo "  3. Try committing again"
+    echo ""
+    exit 1
+  fi
+else
+  echo "✅ package-lock.json not modified - skipping verification"
+fi
+
+echo "✅ Pre-commit checks passed"
