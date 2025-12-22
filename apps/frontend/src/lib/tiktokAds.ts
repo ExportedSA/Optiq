@@ -99,55 +99,51 @@ export class TikTokAdsService {
     advertiserId: string;
   }): Promise<{ accessToken: string }>
   {
-    const cred = await prisma.tikTokAdsCredential.findUnique({
+    // Get credentials from IntegrationConnection
+    const connection = await prisma.integrationConnection.findFirst({
       where: {
-        organizationId_advertiserId: {
-          organizationId: params.organizationId,
-          advertiserId: params.advertiserId,
-        },
+        organizationId: params.organizationId,
+        platformCode: "TIKTOK",
+        externalAccountId: params.advertiserId,
+        status: "CONNECTED",
       },
       select: {
         accessTokenEnc: true,
         refreshTokenEnc: true,
         accessTokenExpiresAt: true,
-        refreshTokenExpiresAt: true,
       },
     });
 
-    if (!cred) throw new Error("TIKTOK_ADS_NOT_CONNECTED");
+    if (!connection || !connection.accessTokenEnc) throw new Error("TIKTOK_ADS_NOT_CONNECTED");
 
     const now = Date.now();
-    const accessExp = cred.accessTokenExpiresAt?.getTime() ?? 0;
+    const accessExp = connection.accessTokenExpiresAt?.getTime() ?? 0;
 
-    if (cred.accessTokenEnc && accessExp - now > 60_000) {
-      return { accessToken: decryptString(cred.accessTokenEnc) };
+    if (connection.accessTokenEnc && accessExp - now > 60_000) {
+      return { accessToken: decryptString(connection.accessTokenEnc) };
     }
 
-    const refreshExp = cred.refreshTokenExpiresAt?.getTime() ?? 0;
-    if (refreshExp && refreshExp - now <= 0) {
-      throw new Error("TIKTOK_REFRESH_TOKEN_EXPIRED");
+    if (!connection.refreshTokenEnc) {
+      throw new Error("TIKTOK_NO_REFRESH_TOKEN");
     }
 
-    const refresh = decryptString(cred.refreshTokenEnc);
+    const refresh = decryptString(connection.refreshTokenEnc);
     const refreshed = await this.refreshToken(refresh);
 
     const newAccessExp = new Date(Date.now() + refreshed.expires_in * 1000);
-    const newRefreshExp = new Date(Date.now() + refreshed.refresh_expires_in * 1000);
 
-    await prisma.tikTokAdsCredential.update({
+    // Update the connection with new tokens
+    await prisma.integrationConnection.updateMany({
       where: {
-        organizationId_advertiserId: {
-          organizationId: params.organizationId,
-          advertiserId: params.advertiserId,
-        },
+        organizationId: params.organizationId,
+        platformCode: "TIKTOK",
+        externalAccountId: params.advertiserId,
       },
       data: {
         accessTokenEnc: encryptString(refreshed.access_token),
         refreshTokenEnc: encryptString(refreshed.refresh_token),
         accessTokenExpiresAt: newAccessExp,
-        refreshTokenExpiresAt: newRefreshExp,
       },
-      select: { id: true },
     });
 
     return { accessToken: refreshed.access_token };

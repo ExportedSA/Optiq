@@ -153,13 +153,13 @@ export async function GET(request: Request) {
         where: {
           organizationId_platformCode_externalAccountId: {
             organizationId,
-            platformCode: "META_ADS",
+            platformCode: "META",
             externalAccountId: account.account_id,
           },
         },
         create: {
           organizationId,
-          platformCode: "META_ADS",
+          platformCode: "META",
           externalAccountId: account.account_id,
           externalAccountName: account.name,
           currency: account.currency,

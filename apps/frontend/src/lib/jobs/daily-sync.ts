@@ -305,13 +305,17 @@ async function syncGoogleAds(
   const logger = appLogger.child({ connector: "google-ads", organizationId });
   logger.info("Syncing Google Ads", { startDate, endDate });
 
-  // Check if we have credentials
-  const credential = await prisma.googleAdsCredential.findFirst({
-    where: { organizationId },
+  // Check if we have an active Google Ads connection
+  const connection = await prisma.integrationConnection.findFirst({
+    where: {
+      organizationId,
+      platformCode: "GOOGLE_ADS",
+      status: "CONNECTED",
+    },
   });
 
-  if (!credential) {
-    throw new Error("No Google Ads credentials found");
+  if (!connection) {
+    throw new Error("No Google Ads connection found");
   }
 
   // TODO: Call actual Google Ads sync service
@@ -368,13 +372,18 @@ async function syncTikTok(
   const logger = appLogger.child({ connector: "tiktok", organizationId });
   logger.info("Syncing TikTok Ads", { startDate, endDate, externalAccountId });
 
-  // Check if we have credentials
-  const credential = await prisma.tikTokAdsCredential.findFirst({
-    where: { organizationId, advertiserId: externalAccountId },
+  // Check if we have an active TikTok connection
+  const connection = await prisma.integrationConnection.findFirst({
+    where: {
+      organizationId,
+      platformCode: "TIKTOK",
+      externalAccountId,
+      status: "CONNECTED",
+    },
   });
 
-  if (!credential) {
-    throw new Error("No TikTok credentials found");
+  if (!connection) {
+    throw new Error("No TikTok Ads connection found");
   }
 
   // TODO: Call actual TikTok sync service

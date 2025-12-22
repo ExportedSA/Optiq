@@ -201,8 +201,9 @@ async function getCostData(organizationId: string, date: Date) {
       spendMicros: true,
       campaign: {
         select: {
-          adsetId: true,
-          adId: true,
+          id: true,
+          externalId: true,
+          name: true,
         },
       },
     },

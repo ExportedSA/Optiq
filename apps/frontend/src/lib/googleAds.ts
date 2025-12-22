@@ -79,14 +79,14 @@ export class GoogleAdsService {
   public async getValidAccessToken(params: {
     organizationId: string;
     customerId: string;
-  }): Promise<{ accessToken: string }>
-  {
-    const cred = await prisma.googleAdsCredential.findUnique({
+  }): Promise<{ accessToken: string }> {
+    // Get credentials from IntegrationConnection
+    const connection = await prisma.integrationConnection.findFirst({
       where: {
-        organizationId_customerId: {
-          organizationId: params.organizationId,
-          customerId: params.customerId,
-        },
+        organizationId: params.organizationId,
+        platformCode: "GOOGLE_ADS",
+        externalAccountId: params.customerId,
+        status: "CONNECTED",
       },
       select: {
         refreshTokenEnc: true,
@@ -95,17 +95,19 @@ export class GoogleAdsService {
       },
     });
 
-    if (!cred) throw new Error("GOOGLE_ADS_NOT_CONNECTED");
+    if (!connection) throw new Error("GOOGLE_ADS_NOT_CONNECTED");
 
     const now = Date.now();
-    const expiresAt = cred.accessTokenExpiresAt?.getTime() ?? 0;
-    const stillValid = cred.accessTokenEnc && expiresAt - now > 60_000;
+    const expiresAt = connection.accessTokenExpiresAt?.getTime() ?? 0;
+    const stillValid = connection.accessTokenEnc && expiresAt - now > 60_000;
 
     if (stillValid) {
-      return { accessToken: decryptString(cred.accessTokenEnc) };
+      return { accessToken: decryptString(connection.accessTokenEnc!) };
     }
 
-    const refreshToken = decryptString(cred.refreshTokenEnc);
+    if (!connection.refreshTokenEnc) throw new Error("GOOGLE_ADS_NO_REFRESH_TOKEN");
+
+    const refreshToken = decryptString(connection.refreshTokenEnc);
     const refreshed = await this.refreshAccessToken(refreshToken);
     if (!refreshed.access_token) throw new Error("GOOGLE_OAUTH_REFRESH_FAILED");
 
@@ -113,18 +115,17 @@ export class GoogleAdsService {
       ? new Date(Date.now() + refreshed.expires_in * 1000)
       : null;
 
-    await prisma.googleAdsCredential.update({
+    // Update the connection with new access token
+    await prisma.integrationConnection.updateMany({
       where: {
-        organizationId_customerId: {
-          organizationId: params.organizationId,
-          customerId: params.customerId,
-        },
+        organizationId: params.organizationId,
+        platformCode: "GOOGLE_ADS",
+        externalAccountId: params.customerId,
       },
       data: {
         accessTokenEnc: encryptString(refreshed.access_token),
         accessTokenExpiresAt: newExpiresAt,
       },
-      select: { id: true },
     });
 
     return { accessToken: refreshed.access_token };

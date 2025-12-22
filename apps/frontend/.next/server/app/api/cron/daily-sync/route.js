@@ -1,5 +1,5 @@
 var R=require("../../../../chunks/[turbopack]_runtime.js")("server/app/api/cron/daily-sync/route.js")
-R.c("server/chunks/[root-of-the-server]__9953ed17._.js")
+R.c("server/chunks/[root-of-the-server]__6ec6c564._.js")
 R.c("server/chunks/c9d07_@opentelemetry_api_build_esm_19dbe391._.js")
 R.c("server/chunks/c9d07_next_dist_a43554ac._.js")
 R.c("server/chunks/OneDrive_Desktop_Optiq_CascadeProjects_windsurf-project_6b4a58d8._.js")

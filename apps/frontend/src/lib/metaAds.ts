@@ -97,12 +97,13 @@ export class MetaAdsService {
     organizationId: string;
     metaAdAccountId: string;
   }): Promise<{ accessToken: string }> {
-    const cred = await prisma.metaAdsCredential.findUnique({
+    // Get credentials from IntegrationConnection
+    const connection = await prisma.integrationConnection.findFirst({
       where: {
-        organizationId_adAccountId: {
-          organizationId: params.organizationId,
-          adAccountId: params.metaAdAccountId,
-        },
+        organizationId: params.organizationId,
+        platformCode: "META",
+        externalAccountId: params.metaAdAccountId,
+        status: "CONNECTED",
       },
       select: {
         accessTokenEnc: true,
@@ -110,35 +111,34 @@ export class MetaAdsService {
       },
     });
 
-    if (!cred) throw new Error("META_ADS_NOT_CONNECTED");
+    if (!connection || !connection.accessTokenEnc) throw new Error("META_ADS_NOT_CONNECTED");
 
     const now = Date.now();
-    const expiresAt = cred.accessTokenExpiresAt?.getTime() ?? 0;
+    const expiresAt = connection.accessTokenExpiresAt?.getTime() ?? 0;
     const stillValid = expiresAt - now > 7 * 24 * 60 * 60_000;
 
     if (stillValid) {
-      return { accessToken: decryptString(cred.accessTokenEnc) };
+      return { accessToken: decryptString(connection.accessTokenEnc) };
     }
 
-    const current = decryptString(cred.accessTokenEnc);
+    const current = decryptString(connection.accessTokenEnc);
     const refreshed = await this.exchangeForLongLivedToken(current);
 
     const newExpiresAt = refreshed.expires_in
       ? new Date(Date.now() + refreshed.expires_in * 1000)
       : null;
 
-    await prisma.metaAdsCredential.update({
+    // Update the connection with new access token
+    await prisma.integrationConnection.updateMany({
       where: {
-        organizationId_adAccountId: {
-          organizationId: params.organizationId,
-          adAccountId: params.metaAdAccountId,
-        },
+        organizationId: params.organizationId,
+        platformCode: "META",
+        externalAccountId: params.metaAdAccountId,
       },
       data: {
         accessTokenEnc: encryptString(refreshed.access_token),
         accessTokenExpiresAt: newExpiresAt,
       },
-      select: { id: true },
     });
 
     return { accessToken: refreshed.access_token };

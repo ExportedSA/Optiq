@@ -139,8 +139,8 @@ export async function runDailySync(options?: DailySyncOptions): Promise<DailySyn
           costFactsUpdated += result.updated;
           connectionsProcessed++;
 
-          // Update job status to completed
-          await updateIngestionJob(job.id, "COMPLETED", {
+          // Update job status to succeeded
+          await updateIngestionJob(job.id, "SUCCEEDED", {
             costFactsCreated: result.created,
             costFactsUpdated: result.updated,
           });
@@ -252,14 +252,25 @@ async function syncConnection(
     let costData: any[] = [];
 
     // Fetch data based on platform
-    if (platformCode === "META_ADS") {
+    if (platformCode === "META") {
+      // Meta only supports CAMPAIGN, ADSET, AD (not ADGROUP)
+      if (grain === "ADGROUP") {
+        logger.debug("Skipping ADGROUP grain for Meta (not supported)");
+        continue;
+      }
       costData = await metaRetry(() =>
-        fetchMetaCostData(accessToken, externalAccountId, fromDate, toDate, grain)
+        fetchMetaCostData(accessToken, externalAccountId, fromDate, toDate, grain as "CAMPAIGN" | "ADSET" | "AD")
       );
     } else if (platformCode === "GOOGLE_ADS") {
       const developerToken = process.env.GOOGLE_ADS_DEVELOPER_TOKEN;
       if (!developerToken) {
         throw new Error("GOOGLE_ADS_DEVELOPER_TOKEN not configured");
+      }
+      // Google Ads supports CAMPAIGN, ADGROUP, AD (map ADSET to ADGROUP)
+      const googleGrain = grain === "ADSET" ? "ADGROUP" : grain;
+      if (googleGrain !== "CAMPAIGN" && googleGrain !== "ADGROUP" && googleGrain !== "AD") {
+        logger.debug("Skipping unsupported grain for Google Ads", { grain });
+        continue;
       }
       costData = await googleRetry(() =>
         fetchGoogleAdsCostData(
@@ -268,7 +279,7 @@ async function syncConnection(
           externalAccountId,
           fromDate,
           toDate,
-          grain
+          googleGrain as "CAMPAIGN" | "ADGROUP" | "AD"
         )
       );
     } else {
@@ -379,7 +390,7 @@ async function createIngestionJob(
     data: {
       organizationId,
       platform: platformCode,
-      jobType: "COST_SYNC",
+      jobType: "DAILY_SYNC",
       status: "QUEUED",
       idempotencyKey,
       payload: {

@@ -37,33 +37,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "missing_refresh_token" }, { status: 400 });
   }
 
-  const expiresAt = tokens.expires_in
-    ? new Date(Date.now() + tokens.expires_in * 1000)
-    : null;
-
-  await prisma.googleAdsCredential.upsert({
-    where: {
-      organizationId_customerId: {
-        organizationId: parsed.orgId,
-        customerId: parsed.customerId,
-      },
-    },
-    create: {
-      organizationId: parsed.orgId,
-      customerId: parsed.customerId,
-      refreshTokenEnc: encryptString(tokens.refresh_token),
-      accessTokenEnc: tokens.access_token ? encryptString(tokens.access_token) : null,
-      accessTokenExpiresAt: expiresAt,
-      scope: tokens.scope ?? "https://www.googleapis.com/auth/adwords",
-    },
-    update: {
-      refreshTokenEnc: encryptString(tokens.refresh_token),
-      accessTokenEnc: tokens.access_token ? encryptString(tokens.access_token) : null,
-      accessTokenExpiresAt: expiresAt,
-      scope: tokens.scope ?? "https://www.googleapis.com/auth/adwords",
-    },
-    select: { id: true },
-  });
-
+  // Note: Google Ads credentials are stored in IntegrationConnection
+  // This legacy endpoint is deprecated - redirect to main callback
   return NextResponse.redirect(new URL("/app", url.origin));
 }

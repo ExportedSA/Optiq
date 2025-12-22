@@ -32,31 +32,7 @@ export async function GET(req: Request) {
 
   const svc = new MetaAdsService();
   const short = await svc.exchangeCode(code);
-  const long = await svc.exchangeForLongLivedToken(short.access_token);
-
-  const expiresAt = long.expires_in ? new Date(Date.now() + long.expires_in * 1000) : null;
-
-  await prisma.metaAdsCredential.upsert({
-    where: {
-      organizationId_adAccountId: {
-        organizationId: parsed.orgId,
-        adAccountId: parsed.metaAdAccountId,
-      },
-    },
-    create: {
-      organizationId: parsed.orgId,
-      adAccountId: parsed.metaAdAccountId,
-      accessTokenEnc: encryptString(long.access_token),
-      accessTokenExpiresAt: expiresAt,
-      scope: "ads_read,read_insights,business_management",
-    },
-    update: {
-      accessTokenEnc: encryptString(long.access_token),
-      accessTokenExpiresAt: expiresAt,
-      scope: "ads_read,read_insights,business_management",
-    },
-    select: { id: true },
-  });
-
+  // Note: Meta Ads credentials are stored in IntegrationConnection
+  // This legacy endpoint is deprecated - redirect to main callback
   return NextResponse.redirect(new URL("/app", url.origin));
 }

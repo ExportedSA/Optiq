@@ -33,34 +33,7 @@ export async function GET(req: Request) {
   const svc = new TikTokAdsService();
   const tokens = await svc.exchangeCode(code);
 
-  const accessExp = new Date(Date.now() + tokens.expires_in * 1000);
-  const refreshExp = new Date(Date.now() + tokens.refresh_expires_in * 1000);
-
-  await prisma.tikTokAdsCredential.upsert({
-    where: {
-      organizationId_advertiserId: {
-        organizationId: parsed.orgId,
-        advertiserId: parsed.advertiserId,
-      },
-    },
-    create: {
-      organizationId: parsed.orgId,
-      advertiserId: parsed.advertiserId,
-      accessTokenEnc: encryptString(tokens.access_token),
-      refreshTokenEnc: encryptString(tokens.refresh_token),
-      accessTokenExpiresAt: accessExp,
-      refreshTokenExpiresAt: refreshExp,
-      scope: tokens.scope,
-    },
-    update: {
-      accessTokenEnc: encryptString(tokens.access_token),
-      refreshTokenEnc: encryptString(tokens.refresh_token),
-      accessTokenExpiresAt: accessExp,
-      refreshTokenExpiresAt: refreshExp,
-      scope: tokens.scope,
-    },
-    select: { id: true },
-  });
-
+  // Note: TikTok Ads credentials are stored in IntegrationConnection
+  // This legacy endpoint is deprecated - redirect to main callback
   return NextResponse.redirect(new URL("/app", url.origin));
 }

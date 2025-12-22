@@ -96,7 +96,7 @@ export async function refreshMetaToken(connectionId: string): Promise<{
     where: { id: connectionId },
   });
 
-  if (!connection || connection.platformCode !== "META_ADS") {
+  if (!connection || connection.platformCode !== "META") {
     throw new Error("Invalid Meta connection");
   }
 
@@ -182,7 +182,7 @@ export async function getValidAccessToken(connectionId: string): Promise<string>
     if (connection.platformCode === "GOOGLE_ADS") {
       const { accessToken } = await refreshGoogleAdsToken(connectionId);
       return accessToken;
-    } else if (connection.platformCode === "META_ADS") {
+    } else if (connection.platformCode === "META") {
       const { accessToken } = await refreshMetaToken(connectionId);
       return accessToken;
     }
@@ -219,7 +219,7 @@ export async function refreshExpiringTokens(): Promise<{
       if (connection.platformCode === "GOOGLE_ADS") {
         await refreshGoogleAdsToken(connection.id);
         refreshed++;
-      } else if (connection.platformCode === "META_ADS") {
+      } else if (connection.platformCode === "META") {
         await refreshMetaToken(connection.id);
         refreshed++;
       }

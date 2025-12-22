@@ -16,7 +16,7 @@ const RATE_LIMIT_DELAY_MS = 10000; // 10 seconds between calls
 
 export interface GoogleAdsCostData {
   date: string;
-  grain: "CAMPAIGN" | "ADSET" | "AD";
+  grain: "CAMPAIGN" | "ADGROUP" | "AD";
   entityExternalId: string;
   entityName: string;
   campaignExternalId?: string;
@@ -64,7 +64,7 @@ export async function fetchGoogleAdsCostData(
   customerId: string,
   startDate: Date,
   endDate: Date,
-  grain: "CAMPAIGN" | "ADSET" | "AD" = "CAMPAIGN"
+  grain: "CAMPAIGN" | "ADGROUP" | "AD" = "CAMPAIGN"
 ): Promise<GoogleAdsCostData[]> {
   const logger = appLogger.child({ integration: "google-ads-client" });
 
@@ -89,7 +89,7 @@ export async function fetchGoogleAdsCostData(
           AND campaign.status != 'REMOVED'
       `;
       break;
-    case "ADSET":
+    case "ADGROUP":
       query = `
         SELECT
           segments.date,
@@ -187,7 +187,7 @@ export async function fetchGoogleAdsCostData(
           costData.campaignExternalId = row.campaign?.id?.toString();
           costData.campaignName = row.campaign?.name;
           break;
-        case "ADSET":
+        case "ADGROUP":
           costData.entityExternalId = row.adGroup?.id?.toString() || "";
           costData.entityName = row.adGroup?.name || "";
           costData.campaignExternalId = row.campaign?.id?.toString();

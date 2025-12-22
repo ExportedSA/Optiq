@@ -182,7 +182,7 @@ export async function GET(request: Request) {
     const refreshTokenEnc = tokens.refresh_token ? encryptToken(tokens.refresh_token) : null;
     const accessTokenExpiresAt = tokens.expiry_date
       ? new Date(tokens.expiry_date)
-      : new Date(Date.now() + (tokens.expires_in || 3600) * 1000);
+      : new Date(Date.now() + 3600 * 1000); // Default 1 hour expiry
 
     // Create IntegrationConnection for each customer
     const connections = [];

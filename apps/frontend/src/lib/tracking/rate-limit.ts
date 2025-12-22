@@ -91,7 +91,7 @@ export async function getTrackingRateLimitStatus(
     }
 
     const currentCount = await redis.get(key);
-    const count = currentCount ? parseInt(currentCount, 10) : 0;
+    const count = currentCount ? parseInt(String(currentCount), 10) : 0;
 
     const remaining = Math.max(0, DEFAULT_LIMIT - count);
     const resetAt = new Date(now + (WINDOW_SECONDS * 1000));

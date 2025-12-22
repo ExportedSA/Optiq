@@ -49,22 +49,45 @@ export async function GET(request: Request) {
     : undefined;
 
   try {
-    const result = await getAlertInbox({
+    const whereClause: any = {
       organizationId,
-      status,
-      severity,
-      limit,
-      offset,
-    });
+    };
+
+    if (status && status.length > 0) {
+      whereClause.status = { in: status };
+    }
+
+    if (severity && severity.length > 0) {
+      whereClause.severity = { in: severity };
+    }
+
+    const [alerts, total] = await Promise.all([
+      prisma.alertEvent.findMany({
+        where: whereClause,
+        orderBy: { triggeredAt: 'desc' },
+        take: limit,
+        skip: offset,
+        include: {
+          alertRule: {
+            select: {
+              id: true,
+              name: true,
+              description: true,
+            },
+          },
+        },
+      }),
+      prisma.alertEvent.count({ where: whereClause }),
+    ]);
 
     return NextResponse.json({
       success: true,
-      data: result.alerts,
+      data: alerts,
       pagination: {
-        total: result.total,
+        total,
         limit,
         offset,
-        hasMore: offset + result.alerts.length < result.total,
+        hasMore: offset + alerts.length < total,
       },
     });
   } catch (error) {

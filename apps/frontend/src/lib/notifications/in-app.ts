@@ -35,7 +35,7 @@ export class InAppChannelHandler implements NotificationChannelHandler {
           priority: payload.priority,
           status: "pending" as NotificationStatus,
           actionUrl: payload.actionUrl,
-          metadata: payload.metadata,
+          metadata: payload.metadata as any,
         })),
         skipDuplicates: true,
       });
