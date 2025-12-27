@@ -19,6 +19,7 @@
     "@optiq/shared": "*",
     "@prisma/client": "^6.16.0",
     "@sentry/nextjs": "^8.0.0",
+    "@tailwindcss/oxide": "^4",
     "@upstash/redis": "^1.28.0",
     "argon2": "^0.44.0",
     "google-auth-library": "^9.15.1",
