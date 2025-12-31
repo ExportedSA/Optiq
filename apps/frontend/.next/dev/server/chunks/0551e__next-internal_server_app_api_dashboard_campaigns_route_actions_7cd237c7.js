@@ -1,0 +1,7 @@
+module.exports = [
+"[project]/OneDrive/Desktop/Optiq/CascadeProjects/windsurf-project/apps/frontend/.next-internal/server/app/api/dashboard/campaigns/route/actions.js [app-rsc] (server actions loader, ecmascript)", ((__turbopack_context__, module, exports) => {
+
+}),
+];
+
+//# sourceMappingURL=0551e__next-internal_server_app_api_dashboard_campaigns_route_actions_7cd237c7.js.map

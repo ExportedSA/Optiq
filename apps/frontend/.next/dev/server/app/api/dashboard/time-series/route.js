@@ -1,0 +1,12 @@
+var R=require("../../../../chunks/[turbopack]_runtime.js")("server/app/api/dashboard/time-series/route.js")
+R.c("server/chunks/c9d07_next_93f0944c._.js")
+R.c("server/chunks/c9d07_@opentelemetry_api_build_esm_c5a98e1e._.js")
+R.c("server/chunks/c9d07_next-auth_a8ad981c._.js")
+R.c("server/chunks/c9d07_openid-client_f41d32e2._.js")
+R.c("server/chunks/c9d07_jose_dist_node_cjs_5ae1202d._.js")
+R.c("server/chunks/c9d07_zod_v4_e9492aa0._.js")
+R.c("server/chunks/OneDrive_Desktop_Optiq_CascadeProjects_windsurf-project_5cabc124._.js")
+R.c("server/chunks/[root-of-the-server]__6608dc51._.js")
+R.c("server/chunks/0551e__next-internal_server_app_api_dashboard_time-series_route_actions_e2f5c28c.js")
+R.m("[project]/OneDrive/Desktop/Optiq/CascadeProjects/windsurf-project/node_modules/next/dist/esm/build/templates/app-route.js { INNER_APP_ROUTE => \"[project]/OneDrive/Desktop/Optiq/CascadeProjects/windsurf-project/apps/frontend/src/app/api/dashboard/time-series/route.ts [app-route] (ecmascript)\" } [app-route] (ecmascript)")
+module.exports=R.m("[project]/OneDrive/Desktop/Optiq/CascadeProjects/windsurf-project/node_modules/next/dist/esm/build/templates/app-route.js { INNER_APP_ROUTE => \"[project]/OneDrive/Desktop/Optiq/CascadeProjects/windsurf-project/apps/frontend/src/app/api/dashboard/time-series/route.ts [app-route] (ecmascript)\" } [app-route] (ecmascript)").exports

@@ -1,4 +1,9 @@
 import { z } from "zod";
+import { config } from "dotenv";
+import path from "path";
+
+// Load .env from monorepo root
+config({ path: path.resolve(__dirname, "../../../../.env") });
 
 import { AppEnvSchema, buildEnvMeta, loadEnv } from "@optiq/shared";
 

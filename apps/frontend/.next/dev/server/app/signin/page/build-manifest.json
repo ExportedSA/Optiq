@@ -1,0 +1,22 @@
+{
+  "devFiles": [],
+  "ampDevFiles": [],
+  "polyfillFiles": [
+    "static/chunks/c9d07_next_dist_build_polyfills_polyfill-nomodule.js"
+  ],
+  "lowPriorityFiles": [],
+  "rootMainFiles": [
+    "static/chunks/[turbopack]_browser_dev_hmr-client_hmr-client_ts_e89b5ed2._.js",
+    "static/chunks/c9d07_next_dist_compiled_react-dom_6345960e._.js",
+    "static/chunks/c9d07_next_dist_compiled_react-server-dom-turbopack_faa619f6._.js",
+    "static/chunks/c9d07_next_dist_compiled_next-devtools_index_6b1c32ff.js",
+    "static/chunks/c9d07_next_dist_compiled_287b7da4._.js",
+    "static/chunks/c9d07_next_dist_client_d755b976._.js",
+    "static/chunks/c9d07_next_dist_6b7afc00._.js",
+    "static/chunks/c9d07_@swc_helpers_cjs_a0d0af58._.js",
+    "static/chunks/OneDrive_Desktop_Optiq_CascadeProjects_windsurf-project_apps_frontend_a0ff3932._.js",
+    "static/chunks/9f58e_Desktop_Optiq_CascadeProjects_windsurf-project_apps_frontend_1e863467._.js"
+  ],
+  "pages": {},
+  "ampFirstPages": []
+}

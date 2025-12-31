@@ -6,12 +6,13 @@
 
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
+import type { Metadata } from "next";
 import { authOptions } from "@/lib/auth";
-import { DashboardClient } from "./dashboard-client";
+import { AdvancedDashboardClient } from "./advanced-dashboard-client";
 
-export const metadata = {
-  title: "Dashboard - Optiq",
-  description: "View your marketing performance metrics",
+export const metadata: Metadata = {
+  title: "Advanced Dashboard - Optiq",
+  description: "Real-time marketing performance analytics with comparison, drill-down, and advanced visualizations",
 };
 
 export default async function DashboardPage() {
@@ -25,5 +26,5 @@ export default async function DashboardPage() {
     redirect("/onboarding");
   }
 
-  return <DashboardClient />;
+  return <AdvancedDashboardClient />;
 }

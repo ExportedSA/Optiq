@@ -1,0 +1,33 @@
+{
+  "version": 3,
+  "middleware": {
+    "/": {
+      "files": [
+        "server/edge/chunks/OneDrive_Desktop_Optiq_CascadeProjects_windsurf-project_cc46192e._.js",
+        "server/edge/chunks/[root-of-the-server]__2ffaca48._.js",
+        "server/edge/chunks/968a2_Optiq_CascadeProjects_windsurf-project_apps_frontend_edge-wrapper_bf09d86e.js"
+      ],
+      "name": "middleware",
+      "page": "/",
+      "matchers": [
+        {
+          "regexp": "^(?:\\/(_next\\/data\\/[^/]{1,}))?\\/app(?:\\/((?:[^\\/#\\?]+?)(?:\\/(?:[^\\/#\\?]+?))*))?(\\\\.json)?[\\/#\\?]?$",
+          "originalSource": "/app/:path*"
+        }
+      ],
+      "wasm": [],
+      "assets": [],
+      "env": {
+        "__NEXT_BUILD_ID": "development",
+        "NEXT_SERVER_ACTIONS_ENCRYPTION_KEY": "8RudIHx82E/gHOrVaS8/qDbkCMaNTe3CeXPAvM7PbHc=",
+        "__NEXT_PREVIEW_MODE_ID": "28d35d304747cda2daede8c6f04b3aad",
+        "__NEXT_PREVIEW_MODE_ENCRYPTION_KEY": "f3b449e49359936a8b161bacbea89bef4648abe799a58faccc552f58566464f6",
+        "__NEXT_PREVIEW_MODE_SIGNING_KEY": "9387efee959a6ff558ae97ea1da91555c4f7d89a5572f761ca1caed853115ba8"
+      }
+    }
+  },
+  "sortedMiddleware": [
+    "/"
+  ],
+  "functions": {}
+}

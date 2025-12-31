@@ -10,9 +10,8 @@ import { prisma } from "@/lib/prisma";
 import { verifyPassword } from "@/lib/password";
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
   session: {
-    strategy: "database",
+    strategy: "jwt",
   },
   secret: env.NEXTAUTH_SECRET,
   pages: {
@@ -57,10 +56,17 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    session: async ({ session, user }) => {
+    jwt: async ({ token, user }) => {
+      if (user) {
+        token.id = user.id;
+        token.activeOrgId = user.activeOrgId;
+      }
+      return token;
+    },
+    session: async ({ session, token }) => {
       if (session.user) {
-        session.user.id = user.id;
-        session.user.activeOrgId = user.activeOrgId ?? undefined;
+        session.user.id = token.id as string;
+        session.user.activeOrgId = token.activeOrgId as string | undefined;
       }
       return session;
     },

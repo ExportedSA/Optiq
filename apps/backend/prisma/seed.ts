@@ -7,6 +7,7 @@
 
 import { PrismaClient, MembershipRole, PlatformCode, EntityStatus, TrackingEventType } from "@prisma/client";
 import * as crypto from "crypto";
+import { hash } from "argon2";
 
 const prisma = new PrismaClient();
 
@@ -35,13 +36,14 @@ async function main() {
 
   // Create demo user
   console.log("Creating demo user...");
+  const passwordHash = await hash("demo123");
   const demoUser = await prisma.user.upsert({
     where: { email: "demo@optiq.io" },
     update: {},
     create: {
       email: "demo@optiq.io",
       name: "Demo User",
-      passwordHash: "$argon2id$v=19$m=65536,t=3,p=4$demo-password-hash", // Not a real hash
+      passwordHash,
       emailVerified: new Date(),
     },
   });
@@ -260,6 +262,7 @@ async function main() {
   console.log(`
 Demo credentials:
   Email: demo@optiq.io
+  Password: demo123
   Organization: Demo Organization (demo-org)
   Tracking Site: demo.optiq.io
   `);

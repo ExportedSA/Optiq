@@ -6,37 +6,52 @@ Marketing attribution and ROI optimization platform. Track ad spend, measure con
 
 ### Prerequisites
 
-- **Node.js 20+**
-- **Docker** (for PostgreSQL)
-- **npm** (comes with Node.js)
+- **Node.js 20+** and npm
+- Git
+- **Database:** Choose one:
+  - **Neon** (Recommended) - Free serverless PostgreSQL, no Docker needed
+  - **Docker** - For local PostgreSQL database
 
-### One-Command Setup
+### Option 1: With Neon (Recommended - 2 Minutes)
 
 ```bash
-# 1. Clone and install
+# 1. Clone the repository
 git clone https://github.com/ExportedSA/Optiq.git
 cd Optiq
 
 # 2. Install dependencies
 npm install
 
-# 3. Set up environment
-cp .env.example .env
-# Edit .env with your values (see .env.example for guidance)
+# 3. Set up Neon database (free)
+# - Go to https://neon.tech and create account
+# - Create a new project
+# - Copy the connection string
 
-# 4. Start everything (DB + Backend + Frontend)
+# 4. Set up environment variables
+cp .env.example .env
+# Edit .env and add:
+# - DATABASE_URL (from Neon)
+# - NEXTAUTH_SECRET (generate with: openssl rand -base64 32)
+# - DATA_ENCRYPTION_KEY (generate with: openssl rand -base64 32)
+
+# 5. Start the application
 npm run dev
 ```
 
-This single command:
-- Starts PostgreSQL via Docker
-- Builds shared packages
-- Runs database migrations
-- Starts the backend API (port 3001)
-- Starts the frontend (port 3000)
+**See [NEON_DATABASE_SETUP.md](./docs/NEON_DATABASE_SETUP.md) for detailed guide.**
 
-### Access the App
+### Option 2: With Docker
 
+```bash
+# Follow steps 1-4 above, then:
+# Make sure Docker Desktop is running
+npm run dev  # This will start PostgreSQL via Docker
+```
+
+The application will be available at:
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:3001
+- API Health: http://localhost:3001/health
 - **Frontend**: http://localhost:3000
 - **Backend API**: http://localhost:3001
 - **API Health**: http://localhost:3001/health
